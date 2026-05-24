@@ -170,7 +170,7 @@
       const data = {
         id:project.id, name:project.name, budget:project.budget,
         members:project.members||[],
-        settleItems:project.settleItems||[],
+        settleItems:(project.settleItems||[]).reduce((acc,item)=>{acc[item.id]=item;return acc;},{}),
         settledPairs:project.settledPairs||[],
         items:project.items.reduce((acc,item)=>{acc[item.id]=item;return acc;},{}),
       };
@@ -950,27 +950,6 @@
                   style={{background:showMemberBar?C.orangeLight:C.card,border:`1px solid ${showMemberBar?C.orange:C.border}`,borderRadius:8,padding:"6px 10px",fontSize:12,fontWeight:600,color:showMemberBar?C.orange:C.textSub,cursor:"pointer",whiteSpace:"nowrap"}}>
                   👥{members.length>0?` ${members.length}명`:""}
                 </button>
-                {showMemberBar&&(
-                  <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:150,minWidth:220,padding:"14px 16px"}}>
-                    <div style={{fontSize:11,color:C.textSub,fontWeight:600,marginBottom:10}}>참여 인원</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:7,alignItems:"center",marginBottom:8}}>
-                      {members.map(m=>(
-                        <div key={m} style={{display:"flex",alignItems:"center",gap:4,background:C.orangeLight,borderRadius:99,padding:"4px 10px 4px 12px"}}>
-                          <span style={{fontSize:12,fontWeight:600,color:C.orange}}>{m}</span>
-                          <button onClick={()=>removeMember(m)} style={{background:"none",border:"none",color:C.orangeDim,cursor:"pointer",fontSize:14,lineHeight:1,padding:"0 0 0 2px"}}>×</button>
-                        </div>
-                      ))}
-                    </div>
-                    {showAddMember?(
-                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                        <input autoFocus value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder="이름 입력" style={{...inputStyle,flex:1,padding:"6px 10px",fontSize:12}}/>
-                        <button onClick={addMember} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"6px 10px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>추가</button>
-                      </div>
-                    ):(
-                      <button onClick={()=>setShowAddMember(true)} style={{width:"100%",background:"none",border:`1.5px dashed ${C.border}`,borderRadius:8,padding:"7px",fontSize:12,color:C.textSub,cursor:"pointer"}}>+ 인원 추가</button>
-                    )}
-                  </div>
-                )}
               </div>
               <div ref={dlRef} style={{position:"relative"}}>
                 <button onClick={()=>setShowDownloadMenu(v=>!v)} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"6px 10px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
@@ -998,6 +977,35 @@
           </div>
 
           {showShareModal&&<ShareModal project={project} onClose={()=>setShowShareModal(false)}/>}
+
+          {/* 인원 관리 모달 */}
+          {showMemberBar&&(
+            <div onClick={()=>{setShowMemberBar(false);setShowAddMember(false);setNewMember("");}} style={{position:"fixed",inset:0,background:"rgba(44,26,16,0.45)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300}}>
+              <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:"16px 16px 0 0",padding:"20px 20px 36px",width:"100%",maxWidth:500,boxShadow:"0 -8px 32px rgba(44,26,16,0.15)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                  <div style={{fontSize:15,fontWeight:700,color:C.text}}>참여 인원</div>
+                  <button onClick={()=>{setShowMemberBar(false);setShowAddMember(false);setNewMember("");}} style={{background:"none",border:"none",color:C.textSub,fontSize:22,cursor:"pointer"}}>×</button>
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+                  {members.map(m=>(
+                    <div key={m} style={{display:"flex",alignItems:"center",gap:4,background:C.orangeLight,borderRadius:99,padding:"6px 12px 6px 14px"}}>
+                      <span style={{fontSize:13,fontWeight:600,color:C.orange}}>{m}</span>
+                      <button onClick={()=>removeMember(m)} style={{background:"none",border:"none",color:C.orangeDim,cursor:"pointer",fontSize:16,lineHeight:1,padding:"0 0 0 4px"}}>×</button>
+                    </div>
+                  ))}
+                </div>
+                {showAddMember?(
+                  <div style={{display:"flex",gap:8}}>
+                    <input autoFocus value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder="이름 입력" style={{...inputStyle,flex:1}}/>
+                    <button onClick={addMember} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"9px 16px",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>추가</button>
+                    <button onClick={()=>{setShowAddMember(false);setNewMember("");}} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,color:C.textSub,cursor:"pointer"}}>취소</button>
+                  </div>
+                ):(
+                  <button onClick={()=>setShowAddMember(true)} style={{width:"100%",background:"none",border:`1.5px dashed ${C.border}`,borderRadius:10,padding:"10px",fontSize:13,color:C.textSub,cursor:"pointer"}}>+ 인원 추가</button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -1038,16 +1046,20 @@
 
       useEffect(()=>{
         if(sharedProjectId||!fbReady) return;
+        // 전체 프로젝트 목록 구독
         const unsub=window.__dbOnValue(window.__dbRef(window.__db,"projects"),snap=>{
           const data=snap.val();
           if(!data){
             const local=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
-            local.forEach(p=>saveProjectToFirebase(p));
+            if(local.length>0) local.forEach(p=>saveProjectToFirebase(p));
             return;
           }
           const fbProjects=Object.values(data).map(p=>({
-            ...p,items:p.items?Object.values(p.items):[],
-            members:p.members||[],settleItems:p.settleItems||[],settledPairs:p.settledPairs||[],
+            ...p,
+            items:p.items?Object.values(p.items):[],
+            members:p.members||[],
+            settleItems:p.settleItems?Object.values(p.settleItems).filter(i=>i&&i.id):p.settleItems||[],
+            settledPairs:p.settledPairs||[],
           }));
           try{localStorage.setItem(STORAGE_KEY,JSON.stringify(fbProjects));}catch{}
           setProjectsRaw(fbProjects);
