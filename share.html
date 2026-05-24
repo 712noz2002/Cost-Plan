@@ -1028,7 +1028,7 @@
             ...data,
             items:data.items?Object.values(data.items):[],
             members:data.members||[],
-            settleItems:data.settleItems?Object.values(data.settleItems).filter(i=>i&&i.id):data.settleItems||[],
+            settleItems:data.settleItems?Object.values(data.settleItems).filter(i=>i&&i.id):[],
             settledPairs:data.settledPairs||[],
           });
         });

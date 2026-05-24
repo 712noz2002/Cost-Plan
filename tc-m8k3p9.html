@@ -1045,7 +1045,7 @@
       },[sharedProjectId,fbReady]);
 
       useEffect(()=>{
-        if(sharedProjectId||!fbReady) return;
+        if(sharedProjectId||!fbReady||!pwUnlocked) return;
         // 전체 프로젝트 목록 구독
         const unsub=window.__dbOnValue(window.__dbRef(window.__db,"projects"),snap=>{
           const data=snap.val();
@@ -1065,7 +1065,7 @@
           setProjectsRaw(fbProjects);
         });
         return unsub;
-      },[fbReady,sharedProjectId]);
+      },[fbReady,sharedProjectId,pwUnlocked]);
 
       function tryUnlock(){
         if(pwInput===PW){setPwUnlocked(true);try{sessionStorage.setItem("tc-unlocked","1");}catch{}}
