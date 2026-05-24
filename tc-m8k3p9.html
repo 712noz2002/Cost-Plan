@@ -13,7 +13,6 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
     const firebaseConfig = {
       apiKey: "AIzaSyCaeyVzITQc5LI7bCHmBZBq_4r5hSYjA4o",
       authDomain: "cost-plan-da947.firebaseapp.com",
@@ -23,14 +22,10 @@
       messagingSenderId: "133700728407",
       appId: "1:133700728407:web:d2f529d7610f81c554d512"
     };
-
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    window.__db = db;
-    window.__dbRef = ref;
-    window.__dbSet = set;
-    window.__dbRemove = remove;
-    window.__dbOnValue = onValue;
+    window.__db = db; window.__dbRef = ref; window.__dbSet = set;
+    window.__dbRemove = remove; window.__dbOnValue = onValue;
     window.__firebaseReady = true;
     window.dispatchEvent(new Event("firebaseReady"));
   </script>
@@ -40,12 +35,13 @@
     body { background: #EDE6E6; font-family: Pretendard, sans-serif; }
     button:hover { opacity: 0.88; }
     input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input[type=date] { color-scheme: light; }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useMemo, useRef, useEffect, useCallback } = React;
+    const { useState, useMemo, useRef, useEffect } = React;
 
     const C = {
       bg:"#F2ECEC", bgApp:"#EDE6E6", bgHeader:"#E6DFDF",
@@ -66,13 +62,6 @@
       "입장/티켓":["경기 티켓","행사 입장권","전시 입장권"],
       "기타":["기타 지출","당일 지출","쇼핑"],
     };
-    const PRESET_AMOUNTS = {
-      "교통":["20000","30000","50000","60000","80000","100000"],
-      "숙박":["50000","80000","100000","130000","150000","200000"],
-      "식비":["20000","30000","50000","70000","100000"],
-      "입장/티켓":["30000","50000","81000","100000","151000","162000"],
-      "기타":["10000","30000","50000","70000","100000"],
-    };
     const CATEGORY_COLORS = {
       "교통":     {bg:"#FEF3EC",text:"#C04A10"},
       "숙박":     {bg:"#F3EDF5",text:"#6A3FA0"},
@@ -90,22 +79,23 @@
       color:C.text, fontSize:13, padding:"9px 12px", outline:"none", fontFamily:"Pretendard, sans-serif",
     };
 
-    const STORAGE_KEY  = "travel-cost-projects";
-    const ACTIVE_KEY   = "travel-cost-active";
+    const STORAGE_KEY = "travel-cost-projects";
+    const ACTIVE_KEY  = "travel-cost-active";
 
     const SAMPLE_ITEMS = [
-      {id:uid(),date:"2025-06-10",destination:"서울",name:"KTX 교통비",category:"교통",amount:"80000",isVariable:false,varGroup:"",varLabel:""},
-      {id:uid(),date:"2025-06-10",destination:"서울",name:"식비 + 문구 구매",category:"식비",amount:"50000",isVariable:false,varGroup:"",varLabel:""},
-      {id:uid(),date:"2025-06-12",destination:"원주",name:"숙박비",category:"숙박",amount:"130000",isVariable:false,varGroup:"",varLabel:""},
-      {id:uid(),date:"2025-06-12",destination:"원주",name:"식비",category:"식비",amount:"70000",isVariable:false,varGroup:"",varLabel:""},
-      {id:uid(),date:"2025-06-12",destination:"원주",name:"왕복 버스",category:"교통",amount:"63600",isVariable:true,varGroup:"원주교통",varLabel:"버스"},
-      {id:uid(),date:"2025-06-12",destination:"원주",name:"자차",category:"교통",amount:"76000",isVariable:true,varGroup:"원주교통",varLabel:"자차"},
-      {id:uid(),date:"2025-06-12",destination:"원주",name:"LCK 티켓 (3R 승리)",category:"입장/티켓",amount:"81000",isVariable:true,varGroup:"LCK티켓",varLabel:"3R 승리"},
-      {id:uid(),date:"2025-06-12",destination:"원주",name:"LCK 티켓 (3R 패배)",category:"입장/티켓",amount:"162000",isVariable:true,varGroup:"LCK티켓",varLabel:"3R 패배"},
-      {id:uid(),date:"2025-06-27",destination:"부산",name:"ITX 왕복",category:"교통",amount:"27800",isVariable:false,varGroup:"",varLabel:""},
-      {id:uid(),date:"2025-06-27",destination:"부산",name:"당일 지출",category:"기타",amount:"70000",isVariable:false,varGroup:"",varLabel:""},
+      {id:uid(),date:"2025-06-10",destination:"서울",name:"KTX 교통비",category:"교통",amount:"80000",isVariable:false,varGroup:"",varLabel:"",isPersonal:true,personalOwner:""},
+      {id:uid(),date:"2025-06-10",destination:"서울",name:"식비 + 문구 구매",category:"식비",amount:"50000",isVariable:false,varGroup:"",varLabel:"",isPersonal:false,personalOwner:""},
+      {id:uid(),date:"2025-06-12",destination:"원주",name:"숙박비",category:"숙박",amount:"130000",isVariable:false,varGroup:"",varLabel:"",isPersonal:false,personalOwner:""},
+      {id:uid(),date:"2025-06-12",destination:"원주",name:"식비",category:"식비",amount:"70000",isVariable:false,varGroup:"",varLabel:"",isPersonal:false,personalOwner:""},
+      {id:uid(),date:"2025-06-12",destination:"원주",name:"왕복 버스",category:"교통",amount:"63600",isVariable:true,varGroup:"원주교통",varLabel:"버스",isPersonal:true,personalOwner:""},
+      {id:uid(),date:"2025-06-12",destination:"원주",name:"자차",category:"교통",amount:"76000",isVariable:true,varGroup:"원주교통",varLabel:"자차",isPersonal:true,personalOwner:""},
+      {id:uid(),date:"2025-06-12",destination:"원주",name:"LCK 티켓 (3R 승리)",category:"입장/티켓",amount:"81000",isVariable:true,varGroup:"LCK티켓",varLabel:"3R 승리",isPersonal:false,personalOwner:""},
+      {id:uid(),date:"2025-06-12",destination:"원주",name:"LCK 티켓 (3R 패배)",category:"입장/티켓",amount:"162000",isVariable:true,varGroup:"LCK티켓",varLabel:"3R 패배",isPersonal:false,personalOwner:""},
+      {id:uid(),date:"2025-06-27",destination:"부산",name:"ITX 왕복",category:"교통",amount:"27800",isVariable:false,varGroup:"",varLabel:"",isPersonal:true,personalOwner:""},
+      {id:uid(),date:"2025-06-27",destination:"부산",name:"당일 지출",category:"기타",amount:"70000",isVariable:false,varGroup:"",varLabel:"",isPersonal:false,personalOwner:""},
     ];
 
+    // ── 시나리오 계산 ───────────────────────────────────────────
     function generateScenarios(items) {
       const fixed=items.filter(i=>!i.isVariable);
       const variable=items.filter(i=>i.isVariable);
@@ -120,9 +110,52 @@
       });
     }
 
-    // ── Firebase 훅 ─────────────────────────────────────────────
+    // 인원 기준 시나리오 금액 계산
+    function calcPersonAmount(item, members) {
+      const amt = parseFloat(item.amount)||0;
+      if (item.isPersonal) return amt;
+      const n = members.length || 1;
+      return amt / n;
+    }
+
+    // 정산 계산 (최소 송금)
+    function calcSettlement(settleItems, members) {
+      if (!members.length) return [];
+      const balance = {};
+      members.forEach(m => balance[m] = 0);
+
+      settleItems.forEach(item => {
+        const amt = parseFloat(item.actualAmount||item.amount)||0;
+        const participants = (item.settleParticipants||[]).filter(p=>members.includes(p));
+        const payer = item.settlePayer;
+        if (!participants.length || !payer || !members.includes(payer)) return;
+        const share = amt / participants.length;
+        participants.forEach(p => {
+          if (p !== payer) {
+            balance[p] = (balance[p]||0) - share;
+            balance[payer] = (balance[payer]||0) + share;
+          }
+        });
+      });
+
+      const result = [];
+      const debtors = Object.entries(balance).filter(([,v])=>v<-0.5).sort((a,b)=>a[1]-b[1]);
+      const creditors = Object.entries(balance).filter(([,v])=>v>0.5).sort((a,b)=>b[1]-a[1]);
+      const d = debtors.map(([n,v])=>({name:n,val:-v}));
+      const c = creditors.map(([n,v])=>({name:n,val:v}));
+      let i=0,j=0;
+      while(i<d.length&&j<c.length){
+        const amount=Math.min(d[i].val,c[j].val);
+        if(amount>0.5) result.push({from:d[i].name,to:c[j].name,amount:Math.round(amount)});
+        d[i].val-=amount; c[j].val-=amount;
+        if(d[i].val<0.5) i++; if(c[j].val<0.5) j++;
+      }
+      return result;
+    }
+
+    // ── Firebase ────────────────────────────────────────────────
     function useFirebase() {
-      const [ready, setReady] = useState(!!window.__firebaseReady);
+      const [ready,setReady]=useState(!!window.__firebaseReady);
       useEffect(()=>{
         if(window.__firebaseReady){setReady(true);return;}
         const h=()=>setReady(true);
@@ -134,61 +167,49 @@
 
     function saveProjectToFirebase(project) {
       if(!window.__db) return;
-      const {__db:db,__dbRef:ref,__dbSet:set}=window;
-      // items 배열을 객체로 변환 (Firebase는 배열 비선호)
       const data = {
-        id: project.id,
-        name: project.name,
-        budget: project.budget,
-        items: project.items.reduce((acc,item)=>{acc[item.id]=item;return acc;},{}),
+        id:project.id, name:project.name, budget:project.budget,
+        members:project.members||[],
+        settleItems:project.settleItems||[],
+        settledPairs:project.settledPairs||[],
+        items:project.items.reduce((acc,item)=>{acc[item.id]=item;return acc;},{}),
       };
-      set(ref(db, `projects/${project.id}`), data).catch(console.error);
+      window.__dbSet(window.__dbRef(window.__db,`projects/${project.id}`),data).catch(console.error);
     }
 
-    function subscribeProject(projectId, callback) {
-      if(!window.__db) return ()=>{};
-      const {__db:db,__dbRef:ref,__dbOnValue:onValue}=window;
-      const unsubscribe = onValue(ref(db,`projects/${projectId}`), snap=>{
-        const data = snap.val();
-        if(!data) {callback(null); return;}
-        const items = data.items ? Object.values(data.items) : [];
-        callback({...data, items});
+    function subscribeProject(projectId,callback){
+      if(!window.__db) return()=>{};
+      const unsub=window.__dbOnValue(window.__dbRef(window.__db,`projects/${projectId}`),snap=>{
+        const data=snap.val();
+        if(!data){callback(null);return;}
+        callback({...data,items:data.items?Object.values(data.items):[],members:data.members||[],settleItems:data.settleItems||[],settledPairs:data.settledPairs||[]});
       });
-      return unsubscribe;
+      return unsub;
     }
 
-    function removeProjectFromFirebase(projectId) {
+    function removeProjectFromFirebase(id){
       if(!window.__db) return;
-      const {__db:db,__dbRef:ref,__dbRemove:remove}=window;
-      remove(ref(db,`projects/${projectId}`)).catch(console.error);
+      window.__dbRemove(window.__dbRef(window.__db,`projects/${id}`)).catch(console.error);
     }
 
-    // ── 공유 링크 감지 ──────────────────────────────────────────
-    function getSharedProjectId() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("share") || null;
+    function getSharedProjectId(){
+      return new URLSearchParams(window.location.search).get("share")||null;
     }
 
-    // ── 공유 링크 복사 모달 ─────────────────────────────────────
-    function ShareModal({ project, onClose }) {
-      const base = window.location.href.replace(/\/[^\/]*$/, "");
-      const url = `${base}/share.html?id=${project.id}`;
-      const [copied, setCopied] = useState(false);
-      function copy() {
-        navigator.clipboard.writeText(url).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});
-      }
-      return (
+    // ── 공유 모달 ────────────────────────────────────────────────
+    function ShareModal({project,onClose}){
+      const base=window.location.href.replace(/\/[^\/]*$/,"");
+      const url=`${base}/share.html?id=${project.id}`;
+      const [copied,setCopied]=useState(false);
+      return(
         <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(44,26,16,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300}}>
           <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:"24px",width:"90%",maxWidth:460,boxShadow:"0 8px 32px rgba(44,26,16,0.15)"}}>
             <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:6}}>🔗 프로젝트 공유</div>
             <div style={{fontSize:13,color:C.textSub,marginBottom:16}}>이 링크를 가진 사람은 <b style={{color:C.orange}}>{project.name}</b>만 보고 함께 편집할 수 있어요.</div>
-            <div style={{display:"flex",gap:8,alignItems:"center",background:C.bg,borderRadius:10,padding:"10px 14px",marginBottom:16,border:`1px solid ${C.border}`}}>
-              <div style={{flex:1,fontSize:12,color:C.textSub,wordBreak:"break-all",fontFamily:"monospace"}}>{url}</div>
-            </div>
+            <div style={{background:C.bg,borderRadius:10,padding:"10px 14px",marginBottom:16,border:`1px solid ${C.border}`,fontSize:12,color:C.textSub,wordBreak:"break-all",fontFamily:"monospace"}}>{url}</div>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={copy} style={{flex:1,background:copied?C.min:C.orange,color:"#FFF",border:"none",borderRadius:10,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer"}}>
-                {copied?"✓ 복사됨!":"링크 복사"}
-              </button>
+              <button onClick={()=>navigator.clipboard.writeText(url).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);})}
+                style={{flex:1,background:copied?C.min:C.orange,color:"#FFF",border:"none",borderRadius:10,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer"}}>{copied?"✓ 복사됨!":"링크 복사"}</button>
               <button onClick={onClose} style={{flex:1,background:"none",color:C.textSub,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px",fontSize:14,cursor:"pointer"}}>닫기</button>
             </div>
           </div>
@@ -196,78 +217,88 @@
       );
     }
 
-    // ── 서브 컴포넌트 ───────────────────────────────────────────
-    function ChipGroup({label,options,value,onChange,allowCustom,customPlaceholder}){
-      const [showCustom,setShowCustom]=useState(false);
-      const isCustom=value&&!options.includes(value);
-      return(
-        <div style={{marginBottom:18}}>
-          <div style={{fontSize:11,color:C.textSub,marginBottom:8,fontWeight:600}}>{label}</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
-            {options.map(opt=>(
-              <button key={opt} onClick={()=>{onChange(opt);setShowCustom(false);}}
-                style={{background:value===opt?C.orange:C.card,color:value===opt?"#FFF":C.text,border:value===opt?`1px solid ${C.orange}`:`1px solid ${C.border}`,borderRadius:99,padding:"5px 14px",fontSize:12,fontWeight:value===opt?700:400,cursor:"pointer"}}>{opt}</button>
-            ))}
-            {allowCustom&&(
-              <button onClick={()=>{setShowCustom(v=>!v);if(!showCustom)onChange("");}}
-                style={{background:(showCustom||isCustom)?C.orangeLight:C.card,color:(showCustom||isCustom)?C.orange:C.textSub,border:(showCustom||isCustom)?`1px solid ${C.orange}`:`1px solid ${C.border}`,borderRadius:99,padding:"5px 14px",fontSize:12,cursor:"pointer"}}>직접 입력</button>
-            )}
-          </div>
-          {(showCustom||isCustom)&&allowCustom&&(
-            <input autoFocus value={isCustom&&!showCustom?value:(showCustom?(isCustom?value:""):value)} placeholder={customPlaceholder||"직접 입력"} onChange={e=>onChange(e.target.value)} style={{...inputStyle,marginTop:8}}/>
-          )}
-        </div>
-      );
-    }
-
-    function DatePicker({value,onChange}){
-      return(
-        <div style={{marginBottom:18}}>
-          <div style={{fontSize:11,color:C.textSub,marginBottom:8,fontWeight:600}}>날짜</div>
-          <input type="date" value={value} onChange={e=>onChange(e.target.value)}
-            style={{...inputStyle, colorScheme:"light"}}/>
-        </div>
-      );
-    }
-
-    function AmountPicker({value,onChange}){
-      return(
-        <div style={{marginBottom:18}}>
-          <div style={{fontSize:11,color:C.textSub,marginBottom:8,fontWeight:600}}>금액</div>
-          <input type="number" value={value} placeholder="금액 입력 (원)"
-            onChange={e=>onChange(e.target.value)}
-            style={{...inputStyle}}/>
-          {value&&<div style={{fontSize:12,color:C.orange,marginTop:6,fontWeight:700}}>= {parseInt(value||0).toLocaleString("ko-KR")}원</div>}
-        </div>
-      );
-    }
-
-    function ItemModal({onClose,onSave,editItem,existingVarGroups,destOptions}){
-      const blank={date:"",destination:"",name:"",category:"교통",amount:"",isVariable:false,varGroup:"",varLabel:""};
+    // ── 항목 추가/수정 모달 ─────────────────────────────────────
+    function ItemModal({onClose,onSave,editItem,destOptions,members}){
+      const blank={date:"",destination:"",name:"",category:"교통",amount:"",isVariable:false,varGroup:"",varLabel:"",isPersonal:false,personalOwner:""};
       const [form,setForm]=useState(editItem?{...editItem}:blank);
       const f=(k,v)=>setForm(p=>({...p,[k]:v}));
+      const existingVarGroups=[...new Set((editItem?[]:[]).map(i=>i.varGroup).filter(Boolean))];
+
       return(
-        <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(44,26,16,0.45)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:200,paddingTop:40}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"24px 24px 28px",width:"92%",maxWidth:500,maxHeight:"80vh",overflowY:"auto",boxShadow:"0 8px 32px rgba(44,26,16,0.15)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:22}}>
+        <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(44,26,16,0.45)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:200,paddingTop:40,overflowY:"auto"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:"24px",width:"92%",maxWidth:500,marginBottom:40,boxShadow:"0 8px 32px rgba(44,26,16,0.15)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
               <div style={{fontSize:16,fontWeight:700,color:C.text}}>{editItem?"항목 수정":"항목 추가"}</div>
               <button onClick={onClose} style={{background:"none",border:"none",color:C.textSub,fontSize:22,cursor:"pointer"}}>×</button>
             </div>
-            <DatePicker value={form.date} onChange={v=>f("date",v)}/>
-            <ChipGroup label="목적지" options={destOptions} value={form.destination} onChange={v=>f("destination",v)} allowCustom customPlaceholder="목적지 직접 입력"/>
-            <div style={{marginBottom:18}}>
-              <div style={{fontSize:11,color:C.textSub,marginBottom:8,fontWeight:600}}>카테고리</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>날짜</div>
+              <input type="date" value={form.date} onChange={e=>f("date",e.target.value)} style={inputStyle}/>
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>목적지</div>
+              <select value={form.destination} onChange={e=>f("destination",e.target.value)} style={{...inputStyle}}>
+                <option value="">선택</option>
+                {destOptions.map(d=><option key={d} value={d}>{d}</option>)}
+                <option value="__custom__">직접 입력</option>
+              </select>
+              {form.destination==="__custom__"&&<input autoFocus value={form._customDest||""} placeholder="목적지 입력" onChange={e=>{setForm(p=>({...p,_customDest:e.target.value,destination:e.target.value}));}} style={{...inputStyle,marginTop:8}}/>}
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>카테고리</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                 {CATEGORIES.map(cat=>(
-                  <button key={cat} onClick={()=>setForm(p=>({...p,category:cat,name:"",amount:""}))}
+                  <button key={cat} onClick={()=>f("category",cat)}
                     style={{background:form.category===cat?C.orange:C.card,color:form.category===cat?"#FFF":C.text,border:form.category===cat?`1px solid ${C.orange}`:`1px solid ${C.border}`,borderRadius:99,padding:"5px 14px",fontSize:12,fontWeight:form.category===cat?700:400,cursor:"pointer"}}>{cat}</button>
                 ))}
               </div>
             </div>
-            <ChipGroup label="항목명" options={PRESET_NAMES[form.category]||[]} value={form.name} onChange={v=>f("name",v)} allowCustom customPlaceholder="항목명 직접 입력"/>
-            <AmountPicker value={form.amount} onChange={v=>f("amount",v)} category={form.category}/>
+
             <div style={{marginBottom:16}}>
-              <div style={{fontSize:11,color:C.textSub,marginBottom:8,fontWeight:600}}>변동 항목 여부</div>
+              <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>항목명</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:6}}>
+                {(PRESET_NAMES[form.category]||[]).map(n=>(
+                  <button key={n} onClick={()=>f("name",n)}
+                    style={{background:form.name===n?C.orange:C.card,color:form.name===n?"#FFF":C.text,border:form.name===n?`1px solid ${C.orange}`:`1px solid ${C.border}`,borderRadius:99,padding:"5px 14px",fontSize:12,cursor:"pointer"}}>{n}</button>
+                ))}
+              </div>
+              <input value={form.name} placeholder="항목명 직접 입력" onChange={e=>f("name",e.target.value)} style={inputStyle}/>
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>금액</div>
+              <input type="number" value={form.amount} placeholder="금액 입력 (원)" onChange={e=>f("amount",e.target.value)} style={inputStyle}/>
+              {form.amount&&<div style={{fontSize:12,color:C.orange,marginTop:5,fontWeight:700}}>= {parseInt(form.amount||0).toLocaleString("ko-KR")}원</div>}
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>개인/공동</div>
+              <div style={{display:"flex",gap:8}}>
+                {[false,true].map(v=>(
+                  <button key={String(v)} onClick={()=>f("isPersonal",v)}
+                    style={{background:form.isPersonal===v?(v?C.orangeLight:C.card):C.card,color:form.isPersonal===v?(v?C.orange:C.text):C.textSub,border:form.isPersonal===v?(v?`1px solid ${C.orange}`:`1px solid ${C.border}`):`1px solid ${C.border}`,borderRadius:99,padding:"5px 18px",fontSize:12,fontWeight:form.isPersonal===v?700:400,cursor:"pointer"}}>
+                    {v?"개인":"공동"}
+                  </button>
+                ))}
+              </div>
+              {form.isPersonal&&members.length>0&&(
+                <div style={{marginTop:8}}>
+                  <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>누구 항목?</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {members.map(m=>(
+                      <button key={m} onClick={()=>f("personalOwner",m)}
+                        style={{background:form.personalOwner===m?C.orange:C.card,color:form.personalOwner===m?"#FFF":C.text,border:form.personalOwner===m?`1px solid ${C.orange}`:`1px solid ${C.border}`,borderRadius:99,padding:"5px 14px",fontSize:12,cursor:"pointer"}}>{m}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>변동 항목 여부</div>
               <div style={{display:"flex",gap:8}}>
                 {[false,true].map(v=>(
                   <button key={String(v)} onClick={()=>f("isVariable",v)}
@@ -277,24 +308,20 @@
                 ))}
               </div>
             </div>
+
             {form.isVariable&&(
               <>
-                <div style={{marginBottom:16}}>
-                  <div style={{fontSize:11,color:C.textSub,marginBottom:8,fontWeight:600}}>변동 그룹</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:6}}>
-                    {existingVarGroups.map(g=>(
-                      <button key={g} onClick={()=>f("varGroup",g)}
-                        style={{background:form.varGroup===g?C.orangeLight:C.card,color:form.varGroup===g?C.orange:C.text,border:form.varGroup===g?`1px solid ${C.orange}`:`1px solid ${C.border}`,borderRadius:99,padding:"5px 14px",fontSize:12,cursor:"pointer"}}>{g}</button>
-                    ))}
-                  </div>
-                  <input value={form.varGroup} placeholder="새 그룹명 입력" onChange={e=>f("varGroup",e.target.value)} style={inputStyle}/>
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>변동 그룹</div>
+                  <input value={form.varGroup} placeholder="그룹명 (예: 원주교통)" onChange={e=>f("varGroup",e.target.value)} style={inputStyle}/>
                 </div>
-                <div style={{marginBottom:18}}>
-                  <div style={{fontSize:11,color:C.textSub,marginBottom:8,fontWeight:600}}>시나리오 표시 이름</div>
-                  <input value={form.varLabel} placeholder="예: 버스, 자차, 3R 승리" onChange={e=>f("varLabel",e.target.value)} style={inputStyle}/>
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>시나리오 표시 이름</div>
+                  <input value={form.varLabel} placeholder="예: 버스, 자차" onChange={e=>f("varLabel",e.target.value)} style={inputStyle}/>
                 </div>
               </>
             )}
+
             <div style={{display:"flex",gap:10,marginTop:4}}>
               <button onClick={()=>{if(!form.name||!form.amount)return;onSave(form);}} style={{flex:1,background:C.orange,color:"#FFF",border:"none",borderRadius:10,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(224,90,41,0.3)"}}>저장</button>
               <button onClick={onClose} style={{flex:1,background:"none",color:C.textSub,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px",fontSize:14,cursor:"pointer"}}>취소</button>
@@ -304,6 +331,7 @@
       );
     }
 
+    // ── 이름 변경 모달 ───────────────────────────────────────────
     function RenameModal({current,onClose,onSave}){
       const [name,setName]=useState(current);
       return(
@@ -320,246 +348,174 @@
       );
     }
 
-    // ── 프로젝트 뷰 ─────────────────────────────────────────────
-    function ProjectView({project,onUpdate,isShared}){
-      const {items,budget}=project;
+    // ── 필터 버튼 ────────────────────────────────────────────────
+    function FilterBar({members,selected,onChange}){
+      return(
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",padding:"10px 16px",background:C.cardAlt,borderBottom:`1px solid ${C.border}`}}>
+          <button onClick={()=>onChange("all")}
+            style={{background:selected==="all"?C.orange:C.card,color:selected==="all"?"#FFF":C.text,border:selected==="all"?`1px solid ${C.orange}`:`1px solid ${C.border}`,borderRadius:99,padding:"4px 14px",fontSize:12,fontWeight:selected==="all"?700:400,cursor:"pointer"}}>전체</button>
+          {members.map(m=>(
+            <button key={m} onClick={()=>onChange(m)}
+              style={{background:selected===m?C.orange:C.card,color:selected===m?"#FFF":C.text,border:selected===m?`1px solid ${C.orange}`:`1px solid ${C.border}`,borderRadius:99,padding:"4px 14px",fontSize:12,fontWeight:selected===m?700:400,cursor:"pointer"}}>{m}</button>
+          ))}
+        </div>
+      );
+    }
+
+    // ── 계획 탭 ─────────────────────────────────────────────────
+    function PlanTab({project,onUpdate}){
+      const {items,budget,members=[]}=project;
       const setItems=next=>onUpdate({...project,items:typeof next==="function"?next(items):next});
       const setBudget=v=>onUpdate({...project,budget:v});
 
-      const [tab,setTab]=useState("items");
       const [showForm,setShowForm]=useState(false);
       const [editItem,setEditItem]=useState(null);
-      const [expandedScenario,setExpandedScenario]=useState(null);
-      const [showDownloadMenu,setShowDownloadMenu]=useState(false);
-      const [showShareModal,setShowShareModal]=useState(false);
-      const dlRef=useRef(null);
+      const [filter,setFilter]=useState("all");
 
-      useEffect(()=>{
-        const h=e=>{if(dlRef.current&&!dlRef.current.contains(e.target))setShowDownloadMenu(false);};
-        document.addEventListener("mousedown",h);
-        return()=>document.removeEventListener("mousedown",h);
-      },[]);
+      const budgetNum=parseFloat(budget)||0;
+      const n=members.length||1;
 
       const scenarios=useMemo(()=>generateScenarios(items),[items]);
       const minS=scenarios.reduce((a,b)=>a.total<b.total?a:b,scenarios[0]);
       const maxS=scenarios.reduce((a,b)=>a.total>b.total?a:b,scenarios[0]);
-      const budgetNum=parseFloat(budget)||0;
+
+      // 필터 적용
+      const filteredItems=useMemo(()=>{
+        if(filter==="all") return [...items].sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+        return [...items].filter(item=>{
+          if(item.isPersonal) return item.personalOwner===filter;
+          return true; // 공동 항목은 모든 인원에게 표시
+        }).sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+      },[items,filter]);
+
+      // 필터 기준 금액 계산
+      const calcAmt=item=>{
+        const amt=parseFloat(item.amount)||0;
+        if(filter==="all") return amt;
+        if(item.isPersonal) return amt;
+        return amt/n;
+      };
+
+      const totalAmt=filteredItems.reduce((s,i)=>s+calcAmt(i),0);
+      const fixedAmt=filteredItems.filter(i=>!i.isVariable).reduce((s,i)=>s+calcAmt(i),0);
+      const perPersonMin=filter==="all"&&members.length>0?((minS?.total||0)/n):null;
+      const perPersonMax=filter==="all"&&members.length>0?((maxS?.total||0)/n):null;
+
       const destinations=[...new Set(items.map(i=>i.destination).filter(Boolean))];
-      const grouped=destinations.reduce((acc,d)=>{acc[d]=items.filter(i=>i.destination===d);return acc;},{});
-      const noDestItems=items.filter(i=>!i.destination);
-      const existingVarGroups=[...new Set(items.filter(i=>i.isVariable).map(i=>i.varGroup).filter(Boolean))];
       const destOptions=[...new Set([...PRESET_DESTINATIONS,...destinations])];
 
-      async function captureTab(targetTab,format){
-        setShowDownloadMenu(false);
-        const prevTab=tab;
-        if(tab!==targetTab){setTab(targetTab);await new Promise(r=>setTimeout(r,400));}
-        const prevExp=expandedScenario;
-        if(targetTab==="scenarios"){setExpandedScenario(null);await new Promise(r=>setTimeout(r,200));}
-        const el=document.getElementById("capture-area");
-        const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:"#F2ECEC"});
-        const imgData=canvas.toDataURL("image/jpeg",0.95);
-        const label=targetTab==="items"?"내역":"시나리오";
-        const fname=`${project.name}_${label}`;
-        if(format==="jpg"){const a=document.createElement("a");a.href=imgData;a.download=`${fname}.jpg`;a.click();}
-        else{const{jsPDF}=window.jspdf;const w=canvas.width/2,h=canvas.height/2;const pdf=new jsPDF({orientation:w>h?"l":"p",unit:"px",format:[w,h]});pdf.addImage(imgData,"JPEG",0,0,w,h);pdf.save(`${fname}.pdf`);}
-        setTab(prevTab);setExpandedScenario(prevExp);
-      }
+      // 날짜별 그룹핑
+      const dateGroups={};
+      filteredItems.forEach(item=>{
+        const k=item.date||"날짜 미지정";
+        if(!dateGroups[k]) dateGroups[k]=[];
+        dateGroups[k].push(item);
+      });
 
       return(
         <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
-          {/* 탭 바 */}
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.border}`,background:C.bgHeader,padding:"0 16px",flexWrap:"wrap",gap:4}}>
-            <div style={{display:"flex"}}>
-              {[["items","내역"],["scenarios","시나리오"]].map(([k,l])=>(
-                <button key={k} onClick={()=>setTab(k)} style={{background:"none",border:"none",cursor:"pointer",padding:"13px 16px",fontSize:13,fontWeight:600,color:tab===k?C.orange:C.textSub,borderBottom:tab===k?`2px solid ${C.orange}`:"2px solid transparent"}}>{l}</button>
-              ))}
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0"}}>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:10,color:C.textSub,marginBottom:1}}>예산</div>
-                <input value={budget} onChange={e=>setBudget(e.target.value.replace(/\D/g,""))}
-                  style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:6,color:C.orange,fontSize:13,fontWeight:700,padding:"3px 8px",width:110,textAlign:"right",outline:"none"}}/>
-              </div>
-              {/* 공유 버튼 (공유 모드가 아닐 때만) */}
-              {!isShared&&(
-                <button onClick={()=>setShowShareModal(true)} style={{background:C.orangeLight,border:`1px solid ${C.orangeDim}`,borderRadius:8,padding:"7px 12px",fontSize:12,fontWeight:700,color:C.orange,cursor:"pointer",whiteSpace:"nowrap"}}>🔗 공유</button>
-              )}
-              <div ref={dlRef} style={{position:"relative"}}>
-                <button onClick={()=>setShowDownloadMenu(v=>!v)} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
-                  ⬇ 저장 <span style={{fontSize:9}}>▾</span>
-                </button>
-                {showDownloadMenu&&(
-                  <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:100,minWidth:180,overflow:"hidden"}}>
-                    <div style={{padding:"9px 14px 4px",fontSize:10,color:C.textMuted,fontWeight:700,letterSpacing:1}}>내역 탭</div>
-                    <button onClick={()=>captureTab("items","jpg")} style={{width:"100%",padding:"9px 16px",background:"none",border:"none",textAlign:"left",fontSize:13,color:C.text,cursor:"pointer"}}>🖼 JPG로 저장</button>
-                    <button onClick={()=>captureTab("items","pdf")} style={{width:"100%",padding:"9px 16px",background:"none",border:"none",textAlign:"left",fontSize:13,color:C.text,cursor:"pointer"}}>📄 PDF로 저장</button>
-                    <div style={{margin:"3px 14px",height:1,background:C.border}}/>
-                    <div style={{padding:"5px 14px 4px",fontSize:10,color:C.textMuted,fontWeight:700,letterSpacing:1}}>시나리오 탭</div>
-                    <button onClick={()=>captureTab("scenarios","jpg")} style={{width:"100%",padding:"9px 16px",background:"none",border:"none",textAlign:"left",fontSize:13,color:C.text,cursor:"pointer"}}>🖼 JPG로 저장</button>
-                    <button onClick={()=>captureTab("scenarios","pdf")} style={{width:"100%",padding:"9px 16px 13px",background:"none",border:"none",textAlign:"left",fontSize:13,color:C.text,cursor:"pointer"}}>📄 PDF로 저장</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          {members.length>0&&<FilterBar members={members} selected={filter} onChange={setFilter}/>}
+          <div style={{flex:1,overflowY:"auto",padding:"18px 16px",background:C.bg}}>
 
-          <div id="capture-area" style={{flex:1,overflowY:"auto",padding:"20px 18px",background:C.bg}}>
-            {tab==="items"&&(
-              <>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(120px, 1fr))",gap:10,marginBottom:18}}>
-                  {[
-                    {label:"전체 항목",value:items.length+"개"},
-                    {label:"고정 지출",value:fmt(items.filter(i=>!i.isVariable).reduce((s,i)=>s+(parseFloat(i.amount)||0),0))},
-                    {label:"최저 예상",value:minS?fmt(minS.total):"-",accent:C.min},
-                    {label:"최고 예상",value:maxS?fmt(maxS.total):"-",accent:C.max},
-                  ].map((c,i)=>(
-                    <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
-                      <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>{c.label}</div>
-                      <div style={{fontSize:15,fontWeight:700,color:c.accent||C.text}}>{c.value}</div>
-                    </div>
-                  ))}
-                </div>
-                {budgetNum>0&&maxS&&(
-                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",marginBottom:18,boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-                      <span style={{fontSize:12,color:C.textSub}}>예산 대비 최고 예상</span>
-                      <span style={{fontSize:12,color:maxS.total>budgetNum?C.max:C.min,fontWeight:700}}>{fmt(maxS.total)} / {fmt(budgetNum)}</span>
-                    </div>
-                    <div style={{height:5,background:C.border,borderRadius:99,overflow:"hidden"}}>
-                      <div style={{height:"100%",borderRadius:99,width:Math.min(100,(maxS.total/budgetNum)*100)+"%",background:maxS.total>budgetNum?C.max:C.orange}}/>
-                    </div>
-                    <div style={{fontSize:11,color:C.textSub,marginTop:6}}>
-                      {maxS.total<=budgetNum?`여유 ${fmt(budgetNum-maxS.total)} (최악 기준)`:`예산 초과 ${fmt(maxS.total-budgetNum)}`}
-                    </div>
+            {/* 요약 카드 */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(120px, 1fr))",gap:10,marginBottom:16}}>
+              {filter==="all"?(
+                <>
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                    <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>전체 항목</div>
+                    <div style={{fontSize:15,fontWeight:700,color:C.text}}>{items.length}개</div>
                   </div>
-                )}
-                <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
-                  <button onClick={()=>{setEditItem(null);setShowForm(true);}} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:9,padding:"9px 18px",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(224,90,41,0.3)"}}>+ 항목 추가</button>
-                </div>
-                {(()=>{
-                  // 날짜순 정렬 후 날짜별 그룹핑
-                  const sorted=[...items].sort((a,b)=>(a.date||"").localeCompare(b.date||""));
-                  const dateGroups={};
-                  sorted.forEach(item=>{
-                    const key=item.date||"날짜 미지정";
-                    if(!dateGroups[key]) dateGroups[key]=[];
-                    dateGroups[key].push(item);
-                  });
-                  return Object.entries(dateGroups).map(([date,dateItems])=>(
-                    <div key={date} style={{marginBottom:22}}>
-                      <div style={{fontSize:10,color:C.textSub,letterSpacing:2,marginBottom:10,fontWeight:700,display:"flex",alignItems:"center",gap:7}}>
-                        <span style={{width:16,height:1,background:C.border,display:"inline-block"}}/>{date}
-                      </div>
-                      <div style={{display:"flex",flexDirection:"column",gap:7}}>
-                        {dateItems.map(item=>{
-                          const cc=CATEGORY_COLORS[item.category]||CATEGORY_COLORS["기타"];
-                          return(
-                            <div key={item.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:11,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,borderLeft:item.isVariable?`3px solid ${C.orange}`:`3px solid ${C.border}`,boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}>
-                              <div style={{flex:1,minWidth:0}}>
-                                <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3,flexWrap:"wrap"}}>
-                                  <span style={{fontSize:13,fontWeight:500}}>{item.name}</span>
-                                  <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:cc.bg,color:cc.text,fontWeight:600}}>{item.category}</span>
-                                  {item.isVariable&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:C.orangeLight,color:C.orange,fontWeight:600}}>변동 · {item.varGroup}</span>}
-                                </div>
-                                {item.destination&&<div style={{fontSize:11,color:C.textMuted}}>{item.destination}</div>}
-                              </div>
-                              <div style={{fontSize:14,fontWeight:700,color:C.text,whiteSpace:"nowrap"}}>{fmt(parseFloat(item.amount)||0)}</div>
-                              <div style={{display:"flex",gap:5}}>
-                                <button onClick={()=>{setEditItem(item);setShowForm(true);}} style={{background:C.orangeLight,border:`1px solid ${C.orangeDim}`,borderRadius:6,padding:"4px 8px",color:C.orange,fontSize:11,fontWeight:600,cursor:"pointer"}}>수정</button>
-                                <button onClick={()=>setItems(items.filter(i=>i.id!==item.id))} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",color:C.textSub,fontSize:11,cursor:"pointer"}}>삭제</button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                    <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>고정 지출</div>
+                    <div style={{fontSize:15,fontWeight:700,color:C.text}}>{fmt(items.filter(i=>!i.isVariable).reduce((s,i)=>s+(parseFloat(i.amount)||0),0))}</div>
+                  </div>
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                    <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>최저 예상</div>
+                    <div style={{fontSize:15,fontWeight:700,color:C.min}}>{fmt(minS?.total||0)}</div>
+                  </div>
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                    <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>최고 예상</div>
+                    <div style={{fontSize:15,fontWeight:700,color:C.max}}>{fmt(maxS?.total||0)}</div>
+                  </div>
+                  {members.length>0&&(
+                    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                      <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>1인당 예상</div>
+                      <div style={{fontSize:12,fontWeight:700,color:C.orange}}>{fmt(perPersonMin||0)} ~ {fmt(perPersonMax||0)}</div>
                     </div>
-                  ));
-                })()}
-              </>
+                  )}
+                </>
+              ):(
+                <>
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                    <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>{filter} 항목</div>
+                    <div style={{fontSize:15,fontWeight:700,color:C.text}}>{filteredItems.length}개</div>
+                  </div>
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                    <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>예상 합계</div>
+                    <div style={{fontSize:15,fontWeight:700,color:C.orange}}>{fmt(totalAmt)}</div>
+                  </div>
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                    <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>고정 지출</div>
+                    <div style={{fontSize:15,fontWeight:700,color:C.text}}>{fmt(fixedAmt)}</div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* 예산 바 */}
+            {budgetNum>0&&filter==="all"&&maxS&&(
+              <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",marginBottom:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                  <span style={{fontSize:12,color:C.textSub}}>예산 대비 최고 예상</span>
+                  <span style={{fontSize:12,color:maxS.total>budgetNum?C.max:C.min,fontWeight:700}}>{fmt(maxS.total)} / {fmt(budgetNum)}</span>
+                </div>
+                <div style={{height:5,background:C.border,borderRadius:99,overflow:"hidden"}}>
+                  <div style={{height:"100%",borderRadius:99,width:Math.min(100,(maxS.total/budgetNum)*100)+"%",background:maxS.total>budgetNum?C.max:C.orange}}/>
+                </div>
+                <div style={{fontSize:11,color:C.textSub,marginTop:6}}>
+                  {maxS.total<=budgetNum?`여유 ${fmt(budgetNum-maxS.total)}`:`예산 초과 ${fmt(maxS.total-budgetNum)}`}
+                </div>
+              </div>
             )}
 
-            {tab==="scenarios"&&(
-              <>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(120px, 1fr))",gap:10,marginBottom:22}}>
-                  {[
-                    {label:"시나리오 수",value:scenarios.length+"개"},
-                    {label:"최저 비용",value:fmt(minS?.total||0),accent:C.min},
-                    {label:"최고 비용",value:fmt(maxS?.total||0),accent:C.max},
-                    {label:"변동 폭",value:fmt((maxS?.total||0)-(minS?.total||0)),accent:C.orange},
-                  ].map((c,i)=>(
-                    <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
-                      <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>{c.label}</div>
-                      <div style={{fontSize:15,fontWeight:700,color:c.accent||C.text}}>{c.value}</div>
-                    </div>
-                  ))}
+            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+              <button onClick={()=>{setEditItem(null);setShowForm(true);}} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:9,padding:"9px 18px",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(224,90,41,0.3)"}}>+ 항목 추가</button>
+            </div>
+
+            {Object.entries(dateGroups).map(([date,dateItems])=>(
+              <div key={date} style={{marginBottom:20}}>
+                <div style={{fontSize:10,color:C.textSub,letterSpacing:2,marginBottom:10,fontWeight:700,display:"flex",alignItems:"center",gap:7}}>
+                  <span style={{width:16,height:1,background:C.border,display:"inline-block"}}/>{date}
                 </div>
-                <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  {scenarios.map((s,i)=>{
-                    const isMin=s===minS,isMax=s===maxS;
-                    const ratio=budgetNum?s.total/budgetNum:0;
-                    const isExp=expandedScenario===i;
+                <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                  {dateItems.map(item=>{
+                    const cc=CATEGORY_COLORS[item.category]||CATEGORY_COLORS["기타"];
+                    const amt=calcAmt(item);
                     return(
-                      <div key={i} style={{background:C.card,border:isMin?`1px solid ${C.minBorder}`:isMax?`1px solid ${C.maxBorder}`:`1px solid ${C.border}`,borderRadius:13,overflow:"hidden",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-                        <div onClick={()=>setExpandedScenario(isExp?null:i)} style={{padding:"15px 17px",cursor:"pointer",background:isMin?C.minBg:isMax?C.maxBg:C.card}}>
-                          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,marginBottom:budgetNum>0?8:0}}>
-                            <div>
-                              <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
-                                <span style={{fontSize:13,fontWeight:700}}>{s.label}</span>
-                                {isMin&&<span style={{fontSize:10,background:C.minBg,color:C.min,padding:"2px 7px",borderRadius:99,fontWeight:700,border:`1px solid ${C.minBorder}`}}>최저</span>}
-                                {isMax&&<span style={{fontSize:10,background:C.maxBg,color:C.max,padding:"2px 7px",borderRadius:99,fontWeight:700,border:`1px solid ${C.maxBorder}`}}>최고</span>}
-                              </div>
-                              {s.subtitle&&<div style={{fontSize:12,color:C.textSub}}>{s.subtitle}</div>}
-                            </div>
-                            <div style={{display:"flex",alignItems:"center",gap:10}}>
-                              <div style={{fontSize:17,fontWeight:700,color:isMin?C.min:isMax?C.max:C.orange,whiteSpace:"nowrap"}}>{fmt(s.total)}</div>
-                              <span style={{fontSize:13,color:C.textSub,display:"inline-block",transform:isExp?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}>▾</span>
-                            </div>
+                      <div key={item.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:11,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,borderLeft:item.isVariable?`3px solid ${C.orange}`:item.isPersonal?`3px solid #7B8CE6`:`3px solid ${C.border}`}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
+                            <span style={{fontSize:13,fontWeight:500}}>{item.name}</span>
+                            <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:cc.bg,color:cc.text,fontWeight:600}}>{item.category}</span>
+                            {item.isPersonal?<span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:"#EEEEF8",color:"#4A5AB0",fontWeight:600}}>개인{item.personalOwner?` · ${item.personalOwner}`:""}</span>:<span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:"#F0EDED",color:"#6B5550",fontWeight:600}}>공동</span>}
+                            {item.isVariable&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:C.orangeLight,color:C.orange,fontWeight:600}}>변동</span>}
                           </div>
-                          {budgetNum>0&&(
-                            <div>
-                              <div style={{height:4,background:C.border,borderRadius:99,overflow:"hidden"}}>
-                                <div style={{height:"100%",borderRadius:99,width:Math.min(100,ratio*100)+"%",background:s.total>budgetNum?C.max:isMin?C.min:C.orange}}/>
-                              </div>
-                              <div style={{fontSize:11,color:C.textSub,marginTop:5}}>
-                                예산 {fmt(budgetNum)} 대비 {(ratio*100).toFixed(1)}%{s.total<=budgetNum?` · 여유 ${fmt(budgetNum-s.total)}`:`· 초과 ${fmt(s.total-budgetNum)}`}
-                              </div>
-                            </div>
-                          )}
+                          {item.destination&&<div style={{fontSize:11,color:C.textMuted}}>{item.destination}</div>}
                         </div>
-                        {isExp&&(
-                          <div style={{borderTop:`1px solid ${C.border}`,padding:"12px 17px 15px",background:C.cardAlt}}>
-                            <div style={{fontSize:10,color:C.textSub,letterSpacing:1,marginBottom:10,fontWeight:600}}>전체 항목 ({s.items.length}개)</div>
-                            <div style={{display:"flex",flexDirection:"column",gap:7}}>
-                              {s.items.map((item,j)=>{
-                                const cc=CATEGORY_COLORS[item.category]||CATEGORY_COLORS["기타"];
-                                return(
-                                  <div key={j} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 12px",background:C.card,borderRadius:9,border:`1px solid ${C.border}`,borderLeft:item.isVariable?`3px solid ${C.orange}`:`3px solid ${C.border}`}}>
-                                    <div style={{flex:1,minWidth:0}}>
-                                      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                                        <span style={{fontSize:13,fontWeight:500}}>{item.name}</span>
-                                        <span style={{fontSize:10,padding:"2px 6px",borderRadius:99,background:cc.bg,color:cc.text,fontWeight:600}}>{item.category}</span>
-                                        {item.isVariable&&<span style={{fontSize:10,padding:"2px 6px",borderRadius:99,background:C.orangeLight,color:C.orange,fontWeight:600}}>변동</span>}
-                                      </div>
-                                      {item.date&&<div style={{fontSize:10,color:C.textMuted,marginTop:2}}>{item.date}{item.destination?` · ${item.destination}`:""}</div>}
-                                    </div>
-                                    <div style={{fontSize:13,fontWeight:700,color:C.text,whiteSpace:"nowrap"}}>{fmt(parseFloat(item.amount)||0)}</div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between"}}>
-                              <span style={{fontSize:12,color:C.textSub,fontWeight:600}}>합계</span>
-                              <span style={{fontSize:15,fontWeight:700,color:isMin?C.min:isMax?C.max:C.orange}}>{fmt(s.total)}</span>
-                            </div>
-                          </div>
-                        )}
+                        <div style={{textAlign:"right",minWidth:80}}>
+                          <div style={{fontSize:14,fontWeight:700,color:C.text}}>{fmt(parseFloat(item.amount)||0)}</div>
+                          {filter!=="all"&&!item.isPersonal&&n>1&&<div style={{fontSize:11,color:C.textSub}}>1인 {fmt(amt)}</div>}
+                        </div>
+                        <div style={{display:"flex",gap:5}}>
+                          <button onClick={()=>{setEditItem(item);setShowForm(true);}} style={{background:C.orangeLight,border:`1px solid ${C.orangeDim}`,borderRadius:6,padding:"4px 8px",color:C.orange,fontSize:11,fontWeight:600,cursor:"pointer"}}>수정</button>
+                          <button onClick={()=>setItems(items.filter(i=>i.id!==item.id))} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",color:C.textSub,fontSize:11,cursor:"pointer"}}>삭제</button>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-              </>
-            )}
+              </div>
+            ))}
           </div>
 
           {showForm&&(
@@ -570,11 +526,413 @@
                 else setItems([...items,{...form,id:uid()}]);
                 setShowForm(false);setEditItem(null);
               }}
-              editItem={editItem}
-              existingVarGroups={existingVarGroups}
-              destOptions={destOptions}
+              editItem={editItem} destOptions={destOptions} members={members}
             />
           )}
+        </div>
+      );
+    }
+
+    // ── 시나리오 탭 ─────────────────────────────────────────────
+    function ScenarioTab({project}){
+      const {items,budget,members=[]}=project;
+      const [filter,setFilter]=useState("all");
+      const [expandedScenario,setExpandedScenario]=useState(null);
+
+      const budgetNum=parseFloat(budget)||0;
+      const n=members.length||1;
+      const scenarios=useMemo(()=>generateScenarios(items),[items]);
+      const minS=scenarios.reduce((a,b)=>a.total<b.total?a:b,scenarios[0]);
+      const maxS=scenarios.reduce((a,b)=>a.total>b.total?a:b,scenarios[0]);
+
+      const calcScenarioAmt=(scenario)=>{
+        if(filter==="all") return scenario.total;
+        return scenario.items.reduce((s,item)=>{
+          const amt=parseFloat(item.amount)||0;
+          if(item.isPersonal) return item.personalOwner===filter?s+amt:s;
+          return s+amt/n;
+        },0);
+      };
+
+      const scenariosWithFilter=scenarios.map(s=>({...s,filteredTotal:calcScenarioAmt(s)}));
+      const minFiltered=scenariosWithFilter.reduce((a,b)=>a.filteredTotal<b.filteredTotal?a:b,scenariosWithFilter[0]);
+      const maxFiltered=scenariosWithFilter.reduce((a,b)=>a.filteredTotal>b.filteredTotal?a:b,scenariosWithFilter[0]);
+
+      return(
+        <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
+          {members.length>0&&<FilterBar members={members} selected={filter} onChange={v=>{setFilter(v);setExpandedScenario(null);}}/>}
+          <div style={{flex:1,overflowY:"auto",padding:"18px 16px",background:C.bg}}>
+
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(120px, 1fr))",gap:10,marginBottom:20}}>
+              {[
+                {label:"시나리오 수",value:scenarios.length+"개"},
+                {label:filter==="all"?"최저 비용":`${filter} 최저`,value:fmt(minFiltered?.filteredTotal||0),accent:C.min},
+                {label:filter==="all"?"최고 비용":`${filter} 최고`,value:fmt(maxFiltered?.filteredTotal||0),accent:C.max},
+                {label:"변동 폭",value:fmt((maxFiltered?.filteredTotal||0)-(minFiltered?.filteredTotal||0)),accent:C.orange},
+              ].map((c,i)=>(
+                <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                  <div style={{fontSize:10,color:C.textSub,marginBottom:5,fontWeight:600}}>{c.label}</div>
+                  <div style={{fontSize:15,fontWeight:700,color:c.accent||C.text}}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {scenariosWithFilter.map((s,i)=>{
+                const isMin=s===minFiltered,isMax=s===maxFiltered;
+                const ratio=budgetNum?s.filteredTotal/budgetNum:0;
+                const isExp=expandedScenario===i;
+                return(
+                  <div key={i} style={{background:C.card,border:isMin?`1px solid ${C.minBorder}`:isMax?`1px solid ${C.maxBorder}`:`1px solid ${C.border}`,borderRadius:13,overflow:"hidden"}}>
+                    <div onClick={()=>setExpandedScenario(isExp?null:i)} style={{padding:"15px 16px",cursor:"pointer",background:isMin?C.minBg:isMax?C.maxBg:C.card}}>
+                      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,marginBottom:budgetNum>0?8:0}}>
+                        <div>
+                          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
+                            <span style={{fontSize:13,fontWeight:700}}>{s.label}</span>
+                            {isMin&&<span style={{fontSize:10,background:C.minBg,color:C.min,padding:"2px 7px",borderRadius:99,fontWeight:700,border:`1px solid ${C.minBorder}`}}>최저</span>}
+                            {isMax&&<span style={{fontSize:10,background:C.maxBg,color:C.max,padding:"2px 7px",borderRadius:99,fontWeight:700,border:`1px solid ${C.maxBorder}`}}>최고</span>}
+                          </div>
+                          {s.subtitle&&<div style={{fontSize:12,color:C.textSub}}>{s.subtitle}</div>}
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:10}}>
+                          <div>
+                            <div style={{fontSize:17,fontWeight:700,color:isMin?C.min:isMax?C.max:C.orange,whiteSpace:"nowrap",textAlign:"right"}}>{fmt(s.filteredTotal)}</div>
+                            {filter!=="all"&&<div style={{fontSize:10,color:C.textSub,textAlign:"right"}}>전체 {fmt(s.total)}</div>}
+                          </div>
+                          <span style={{fontSize:13,color:C.textSub,display:"inline-block",transform:isExp?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}>▾</span>
+                        </div>
+                      </div>
+                      {budgetNum>0&&(
+                        <div>
+                          <div style={{height:4,background:C.border,borderRadius:99,overflow:"hidden"}}>
+                            <div style={{height:"100%",borderRadius:99,width:Math.min(100,ratio*100)+"%",background:s.filteredTotal>budgetNum?C.max:isMin?C.min:C.orange}}/>
+                          </div>
+                          <div style={{fontSize:11,color:C.textSub,marginTop:5}}>
+                            {(ratio*100).toFixed(1)}%{s.filteredTotal<=budgetNum?` · 여유 ${fmt(budgetNum-s.filteredTotal)}`:`· 초과 ${fmt(s.filteredTotal-budgetNum)}`}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {isExp&&(
+                      <div style={{borderTop:`1px solid ${C.border}`,padding:"12px 16px 15px",background:C.cardAlt}}>
+                        <div style={{fontSize:10,color:C.textSub,marginBottom:10,fontWeight:600}}>항목 ({s.items.length}개)</div>
+                        <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                          {s.items.filter(item=>filter==="all"||(item.isPersonal?item.personalOwner===filter:true)).map((item,j)=>{
+                            const cc=CATEGORY_COLORS[item.category]||CATEGORY_COLORS["기타"];
+                            const amt=filter==="all"?(parseFloat(item.amount)||0):item.isPersonal?(parseFloat(item.amount)||0):(parseFloat(item.amount)||0)/n;
+                            return(
+                              <div key={j} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 12px",background:C.card,borderRadius:9,border:`1px solid ${C.border}`,borderLeft:item.isVariable?`3px solid ${C.orange}`:item.isPersonal?`3px solid #7B8CE6`:`3px solid ${C.border}`}}>
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                                    <span style={{fontSize:13,fontWeight:500}}>{item.name}</span>
+                                    <span style={{fontSize:10,padding:"2px 6px",borderRadius:99,background:cc.bg,color:cc.text,fontWeight:600}}>{item.category}</span>
+                                    {item.isPersonal?<span style={{fontSize:10,padding:"2px 6px",borderRadius:99,background:"#EEEEF8",color:"#4A5AB0",fontWeight:600}}>개인</span>:<span style={{fontSize:10,padding:"2px 6px",borderRadius:99,background:"#F0EDED",color:"#6B5550",fontWeight:600}}>공동</span>}
+                                  </div>
+                                  {item.date&&<div style={{fontSize:10,color:C.textMuted,marginTop:2}}>{item.date}{item.destination?` · ${item.destination}`:""}</div>}
+                                </div>
+                                <div style={{textAlign:"right"}}>
+                                  <div style={{fontSize:13,fontWeight:700,color:C.text,whiteSpace:"nowrap"}}>{fmt(amt)}</div>
+                                  {filter!=="all"&&!item.isPersonal&&n>1&&<div style={{fontSize:10,color:C.textSub}}>전체 {fmt(parseFloat(item.amount)||0)}</div>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between"}}>
+                          <span style={{fontSize:12,color:C.textSub,fontWeight:600}}>합계</span>
+                          <span style={{fontSize:15,fontWeight:700,color:isMin?C.min:isMax?C.max:C.orange}}>{fmt(s.filteredTotal)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── 정산 탭 ─────────────────────────────────────────────────
+    function SettleTab({project,onUpdate}){
+      const {members=[],settleItems=[],settledPairs=[],items=[]}=project;
+      const [newMember,setNewMember]=useState("");
+      const [showAddMember,setShowAddMember]=useState(false);
+      const [editSettleId,setEditSettleId]=useState(null);
+
+      function addMember(){
+        if(!newMember.trim()) return;
+        const updated={...project,members:[...members,newMember.trim()]};
+        onUpdate(updated);
+        setNewMember("");setShowAddMember(false);
+      }
+
+      function removeMember(m){
+        onUpdate({...project,members:members.filter(x=>x!==m)});
+      }
+
+      function updateSettleItem(id,changes){
+        const next=settleItems.map(i=>i.id===id?{...i,...changes}:i);
+        onUpdate({...project,settleItems:next});
+      }
+
+      function addSettleItem(){
+        const newItem={
+          id:uid(), name:"", amount:"", actualAmount:"",
+          settlePayer:"", settleParticipants:[], isPersonal:false,
+        };
+        onUpdate({...project,settleItems:[...settleItems,newItem]});
+        setEditSettleId(newItem.id);
+      }
+
+      function removeSettleItem(id){
+        onUpdate({...project,settleItems:settleItems.filter(i=>i.id!==id)});
+      }
+
+      function toggleSettled(key){
+        const next=settledPairs.includes(key)?settledPairs.filter(k=>k!==key):[...settledPairs,key];
+        onUpdate({...project,settledPairs:next});
+      }
+
+      const settlements=useMemo(()=>calcSettlement(settleItems,members),[settleItems,members]);
+      const pending=settlements.filter(s=>!settledPairs.includes(`${s.from}->${s.to}`));
+      const done=settlements.filter(s=>settledPairs.includes(`${s.from}->${s.to}`));
+      const totalSettle=settlements.reduce((s,i)=>s+i.amount,0);
+      const totalDone=done.reduce((s,i)=>s+i.amount,0);
+
+      return(
+        <div style={{flex:1,overflowY:"auto",padding:"18px 16px",background:C.bg}}>
+
+          {/* 인원 설정 */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",marginBottom:16}}>
+            <div style={{fontSize:11,color:C.textSub,fontWeight:600,marginBottom:10}}>참여 인원</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:7,alignItems:"center"}}>
+              {members.map(m=>(
+                <div key={m} style={{display:"flex",alignItems:"center",gap:4,background:C.orangeLight,borderRadius:99,padding:"4px 10px 4px 12px"}}>
+                  <span style={{fontSize:12,fontWeight:600,color:C.orange}}>{m}</span>
+                  <button onClick={()=>removeMember(m)} style={{background:"none",border:"none",color:C.orangeDim,cursor:"pointer",fontSize:14,lineHeight:1,padding:"0 0 0 2px"}}>×</button>
+                </div>
+              ))}
+              {showAddMember?(
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <input autoFocus value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder="이름 입력" style={{...inputStyle,width:100,padding:"4px 10px",fontSize:12}}/>
+                  <button onClick={addMember} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"4px 10px",fontSize:12,fontWeight:700,cursor:"pointer"}}>추가</button>
+                  <button onClick={()=>setShowAddMember(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 10px",fontSize:12,color:C.textSub,cursor:"pointer"}}>취소</button>
+                </div>
+              ):(
+                <button onClick={()=>setShowAddMember(true)} style={{background:"none",border:`1.5px dashed ${C.border}`,borderRadius:99,padding:"4px 12px",fontSize:12,color:C.textSub,cursor:"pointer"}}>+ 추가</button>
+              )}
+            </div>
+          </div>
+
+          {/* 실제 지출 항목 */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontSize:10,color:C.textSub,fontWeight:700,letterSpacing:2}}>실제 지출 항목</div>
+            <button onClick={addSettleItem} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ 추가</button>
+          </div>
+
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+            {settleItems.map(item=>{
+              const n=item.settleParticipants?.length||1;
+              const amt=parseFloat(item.actualAmount||item.amount)||0;
+              const isEditing=editSettleId===item.id;
+
+              return(
+                <div key={item.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden"}}>
+                  {isEditing?(
+                    <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
+                      <div style={{display:"flex",gap:8}}>
+                        <input value={item.name} placeholder="항목명" onChange={e=>updateSettleItem(item.id,{name:e.target.value})} style={{...inputStyle,flex:2}}/>
+                        <input type="number" value={item.actualAmount||item.amount} placeholder="금액" onChange={e=>updateSettleItem(item.id,{actualAmount:e.target.value})} style={{...inputStyle,flex:1}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>결제자</div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                          {members.map(m=>(
+                            <button key={m} onClick={()=>updateSettleItem(item.id,{settlePayer:m})}
+                              style={{background:item.settlePayer===m?C.orange:C.card,color:item.settlePayer===m?"#FFF":C.text,border:item.settlePayer===m?`1px solid ${C.orange}`:`1px solid ${C.border}`,borderRadius:99,padding:"5px 14px",fontSize:12,cursor:"pointer"}}>{m}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{fontSize:11,color:C.textSub,marginBottom:6,fontWeight:600}}>참여 인원</div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                          {members.map(m=>{
+                            const checked=(item.settleParticipants||[]).includes(m);
+                            return(
+                              <button key={m} onClick={()=>{
+                                const cur=item.settleParticipants||[];
+                                updateSettleItem(item.id,{settleParticipants:checked?cur.filter(x=>x!==m):[...cur,m]});
+                              }} style={{background:checked?C.orange:C.card,color:checked?"#FFF":C.text,border:checked?`1px solid ${C.orange}`:`1px solid ${C.border}`,borderRadius:99,padding:"5px 14px",fontSize:12,cursor:"pointer"}}>{m}</button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                        <button onClick={()=>removeSettleItem(item.id)} style={{background:"none",border:`1px solid ${C.maxBorder}`,borderRadius:8,padding:"6px 12px",fontSize:12,color:C.max,cursor:"pointer"}}>삭제</button>
+                        <button onClick={()=>setEditSettleId(null)} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>완료</button>
+                      </div>
+                    </div>
+                  ):(
+                    <div style={{padding:"13px 16px",display:"flex",alignItems:"center",gap:10}} onClick={()=>setEditSettleId(item.id)}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:500,color:C.text,marginBottom:3}}>{item.name||"항목명 없음"}</div>
+                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                          {item.settlePayer&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:C.orangeLight,color:C.orange,fontWeight:600}}>{item.settlePayer} 결제</span>}
+                          {(item.settleParticipants||[]).length>0&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:"#F0EDED",color:"#6B5550",fontWeight:600}}>{item.settleParticipants.join(", ")}</span>}
+                        </div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:14,fontWeight:700,color:C.text}}>{fmt(amt)}</div>
+                        {n>1&&<div style={{fontSize:11,color:C.textSub}}>1인 {fmt(amt/n)}</div>}
+                      </div>
+                      <div style={{fontSize:12,color:C.textSub}}>›</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {settleItems.length===0&&(
+              <div style={{textAlign:"center",padding:"30px 0",color:C.textMuted,fontSize:13}}>항목을 추가해주세요</div>
+            )}
+          </div>
+
+          {/* 정산 결과 */}
+          {settlements.length>0&&(
+            <>
+              <div style={{fontSize:10,color:C.textSub,fontWeight:700,letterSpacing:2,marginBottom:10}}>정산 결과</div>
+
+              {/* 진행 상황 */}
+              <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 16px",marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                  <span style={{fontSize:12,color:C.textSub}}>정산 진행도</span>
+                  <span style={{fontSize:12,fontWeight:700,color:C.text}}>{done.length}/{settlements.length} 완료</span>
+                </div>
+                <div style={{height:5,background:C.border,borderRadius:99,overflow:"hidden"}}>
+                  <div style={{height:"100%",borderRadius:99,width:(settlements.length?done.length/settlements.length*100:0)+"%",background:C.min,transition:"width 0.3s"}}/>
+                </div>
+              </div>
+
+              {/* 미완료 */}
+              {pending.length>0&&(
+                <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",marginBottom:10}}>
+                  {pending.map((s,i)=>{
+                    const key=`${s.from}->${s.to}`;
+                    return(
+                      <div key={key} style={{display:"flex",alignItems:"center",gap:10,padding:"13px 16px",borderBottom:i<pending.length-1?`1px solid ${C.border}`:"none"}}>
+                        <div onClick={()=>toggleSettled(key)} style={{width:22,height:22,borderRadius:99,border:`1.5px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}/>
+                        <div style={{flex:1}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <span style={{fontSize:13,fontWeight:600,color:C.text}}>{s.from}</span>
+                            <span style={{fontSize:12,color:C.textSub}}>→</span>
+                            <span style={{fontSize:13,fontWeight:600,color:C.text}}>{s.to}</span>
+                          </div>
+                          <div style={{fontSize:11,color:C.max,marginTop:1}}>미완료</div>
+                        </div>
+                        <div style={{fontSize:15,fontWeight:700,color:C.orange}}>{fmt(s.amount)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* 완료 */}
+              {done.length>0&&(
+                <div style={{background:C.card,border:`1px solid ${C.minBorder}`,borderRadius:12,overflow:"hidden"}}>
+                  {done.map((s,i)=>{
+                    const key=`${s.from}->${s.to}`;
+                    return(
+                      <div key={key} style={{display:"flex",alignItems:"center",gap:10,padding:"13px 16px",borderBottom:i<done.length-1?`1px solid ${C.border}`:"none",opacity:0.7}}>
+                        <div onClick={()=>toggleSettled(key)} style={{width:22,height:22,borderRadius:99,background:C.min,border:`1.5px solid ${C.min}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,color:"#FFF",fontSize:12}}>✓</div>
+                        <div style={{flex:1}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <span style={{fontSize:13,fontWeight:600,color:C.text}}>{s.from}</span>
+                            <span style={{fontSize:12,color:C.textSub}}>→</span>
+                            <span style={{fontSize:13,fontWeight:600,color:C.text}}>{s.to}</span>
+                          </div>
+                          <div style={{fontSize:11,color:C.min,marginTop:1}}>완료</div>
+                        </div>
+                        <div style={{fontSize:15,fontWeight:700,color:C.min,textDecoration:"line-through"}}>{fmt(s.amount)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // ── 프로젝트 뷰 ─────────────────────────────────────────────
+    function ProjectView({project,onUpdate,isShared}){
+      const [tab,setTab]=useState("plan");
+      const [showDownloadMenu,setShowDownloadMenu]=useState(false);
+      const [showShareModal,setShowShareModal]=useState(false);
+      const dlRef=useRef(null);
+
+      useEffect(()=>{
+        const h=e=>{if(dlRef.current&&!dlRef.current.contains(e.target))setShowDownloadMenu(false);};
+        document.addEventListener("mousedown",h);
+        return()=>document.removeEventListener("mousedown",h);
+      },[]);
+
+      async function captureTab(targetTab,format){
+        setShowDownloadMenu(false);
+        const prevTab=tab;
+        if(tab!==targetTab){setTab(targetTab);await new Promise(r=>setTimeout(r,400));}
+        const el=document.getElementById("capture-area");
+        const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:"#F2ECEC"});
+        const imgData=canvas.toDataURL("image/jpeg",0.95);
+        const label=targetTab==="plan"?"계획":targetTab==="scenario"?"시나리오":"정산";
+        const fname=`${project.name}_${label}`;
+        if(format==="jpg"){const a=document.createElement("a");a.href=imgData;a.download=`${fname}.jpg`;a.click();}
+        else{const{jsPDF}=window.jspdf;const w=canvas.width/2,h=canvas.height/2;const pdf=new jsPDF({orientation:w>h?"l":"p",unit:"px",format:[w,h]});pdf.addImage(imgData,"JPEG",0,0,w,h);pdf.save(`${fname}.pdf`);}
+        setTab(prevTab);
+      }
+
+      return(
+        <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.border}`,background:C.bgHeader,padding:"0 14px",flexWrap:"wrap",gap:4}}>
+            <div style={{display:"flex"}}>
+              {[["plan","계획"],["scenario","시나리오"],["settle","정산"]].map(([k,l])=>(
+                <button key={k} onClick={()=>setTab(k)} style={{background:"none",border:"none",cursor:"pointer",padding:"12px 14px",fontSize:13,fontWeight:600,color:tab===k?C.orange:C.textSub,borderBottom:tab===k?`2px solid ${C.orange}`:"2px solid transparent"}}>{l}</button>
+              ))}
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0"}}>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:10,color:C.textSub,marginBottom:1}}>예산</div>
+                <input value={project.budget||""} onChange={e=>onUpdate({...project,budget:e.target.value.replace(/\D/g,"")})}
+                  style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:6,color:C.orange,fontSize:13,fontWeight:700,padding:"3px 8px",width:100,textAlign:"right",outline:"none"}}/>
+              </div>
+              {!isShared&&(
+                <button onClick={()=>setShowShareModal(true)} style={{background:C.orangeLight,border:`1px solid ${C.orangeDim}`,borderRadius:8,padding:"6px 10px",fontSize:12,fontWeight:700,color:C.orange,cursor:"pointer",whiteSpace:"nowrap"}}>🔗 공유</button>
+              )}
+              <div ref={dlRef} style={{position:"relative"}}>
+                <button onClick={()=>setShowDownloadMenu(v=>!v)} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"6px 10px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+                  ⬇ <span style={{fontSize:9}}>▾</span>
+                </button>
+                {showDownloadMenu&&(
+                  <div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:C.card,border:`1px solid ${C.border}`,borderRadius:12,boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:100,minWidth:160,overflow:"hidden"}}>
+                    {[["plan","계획"],["scenario","시나리오"],["settle","정산"]].map(([k,l])=>(
+                      <div key={k}>
+                        <div style={{padding:"8px 14px 3px",fontSize:10,color:C.textMuted,fontWeight:700,letterSpacing:1}}>{l} 탭</div>
+                        <button onClick={()=>captureTab(k,"jpg")} style={{width:"100%",padding:"7px 16px",background:"none",border:"none",textAlign:"left",fontSize:13,color:C.text,cursor:"pointer"}}>🖼 JPG</button>
+                        <button onClick={()=>captureTab(k,"pdf")} style={{width:"100%",padding:"7px 16px 10px",background:"none",border:"none",textAlign:"left",fontSize:13,color:C.text,cursor:"pointer"}}>📄 PDF</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div id="capture-area" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
+            {tab==="plan"&&<PlanTab project={project} onUpdate={onUpdate}/>}
+            {tab==="scenario"&&<ScenarioTab project={project}/>}
+            {tab==="settle"&&<SettleTab project={project} onUpdate={onUpdate}/>}
+          </div>
+
           {showShareModal&&<ShareModal project={project} onClose={()=>setShowShareModal(false)}/>}
         </div>
       );
@@ -582,35 +940,31 @@
 
     // ── 메인 앱 ─────────────────────────────────────────────────
     function App(){
-      const fbReady = useFirebase();
-      const sharedProjectId = getSharedProjectId();
+      const fbReady=useFirebase();
+      const sharedProjectId=getSharedProjectId();
 
-      // ── 모든 훅을 최상단에 선언 ────────────────────────────────
-      const PW = "022362";
-      const [pwInput, setPwInput] = useState("");
-      const [pwError, setPwError] = useState(false);
-      const [pwUnlocked, setPwUnlocked] = useState(()=>{
-        try{ return sessionStorage.getItem("tc-unlocked")==="1"; }catch{ return false; }
+      const PW="022362";
+      const [pwInput,setPwInput]=useState("");
+      const [pwError,setPwError]=useState(false);
+      const [pwUnlocked,setPwUnlocked]=useState(()=>{try{return sessionStorage.getItem("tc-unlocked")==="1";}catch{return false;}});
+
+      const [sharedProject,setSharedProject]=useState(null);
+      const [sharedLoading,setSharedLoading]=useState(!!sharedProjectId);
+      const [sharedNotFound,setSharedNotFound]=useState(false);
+
+      const [projects,setProjectsRaw]=useState(()=>{
+        try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):[{id:"p1",name:"프로젝트 1",budget:"1000000",items:SAMPLE_ITEMS,members:[],settleItems:[],settledPairs:[]}];}
+        catch{return [{id:"p1",name:"프로젝트 1",budget:"1000000",items:SAMPLE_ITEMS,members:[],settleItems:[],settledPairs:[]}];}
       });
+      const [activeId,setActiveIdRaw]=useState(()=>localStorage.getItem(ACTIVE_KEY)||"p1");
+      const [renaming,setRenaming]=useState(null);
+      const [confirmDelete,setConfirmDelete]=useState(null);
+      const [sidebarOpen,setSidebarOpen]=useState(true);
+      const isMobile=window.innerWidth<640;
 
-      const [sharedProject, setSharedProject] = useState(null);
-      const [sharedLoading, setSharedLoading] = useState(!!sharedProjectId);
-      const [sharedNotFound, setSharedNotFound] = useState(false);
-
-      const [projects, setProjectsRaw] = useState(()=>{
-        try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):[{id:"p1",name:"프로젝트 1",budget:"1000000",items:SAMPLE_ITEMS}];}
-        catch{return [{id:"p1",name:"프로젝트 1",budget:"1000000",items:SAMPLE_ITEMS}];}
-      });
-      const [activeId, setActiveIdRaw] = useState(()=>localStorage.getItem(ACTIVE_KEY)||"p1");
-      const [renaming, setRenaming] = useState(null);
-      const [confirmDelete, setConfirmDelete] = useState(null);
-      const [sidebarOpen, setSidebarOpen] = useState(true);
-      const [fbLoaded, setFbLoaded] = useState(false);
-
-      // 공유 모드 Firebase 구독
       useEffect(()=>{
         if(!sharedProjectId||!fbReady) return;
-        const unsub = subscribeProject(sharedProjectId, data=>{
+        const unsub=subscribeProject(sharedProjectId,data=>{
           setSharedLoading(false);
           if(!data){setSharedNotFound(true);return;}
           setSharedProject(data);
@@ -618,39 +972,29 @@
         return unsub;
       },[sharedProjectId,fbReady]);
 
-      // 일반 모드 Firebase 구독
       useEffect(()=>{
         if(sharedProjectId||!fbReady) return;
-        const {__db:db,__dbRef:ref,__dbOnValue:onValue}=window;
-        const unsub=onValue(ref(db,"projects"),(snap)=>{
+        const unsub=window.__dbOnValue(window.__dbRef(window.__db,"projects"),snap=>{
           const data=snap.val();
           if(!data){
-            const local = JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+            const local=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
             local.forEach(p=>saveProjectToFirebase(p));
-            setFbLoaded(true);
             return;
           }
           const fbProjects=Object.values(data).map(p=>({
-            ...p, items:p.items?Object.values(p.items):[],
+            ...p,items:p.items?Object.values(p.items):[],
+            members:p.members||[],settleItems:p.settleItems||[],settledPairs:p.settledPairs||[],
           }));
           try{localStorage.setItem(STORAGE_KEY,JSON.stringify(fbProjects));}catch{}
           setProjectsRaw(fbProjects);
-          setFbLoaded(true);
         });
         return unsub;
       },[fbReady,sharedProjectId]);
 
-      // ── 헬퍼 함수들 ────────────────────────────────────────────
       function tryUnlock(){
-        if(pwInput===PW){
-          setPwUnlocked(true);
-          try{sessionStorage.setItem("tc-unlocked","1");}catch{}
-        } else {
-          setPwError(true);
-          setTimeout(()=>setPwError(false),1500);
-        }
+        if(pwInput===PW){setPwUnlocked(true);try{sessionStorage.setItem("tc-unlocked","1");}catch{}}
+        else{setPwError(true);setTimeout(()=>setPwError(false),1500);}
       }
-
       function setProjects(fn){
         setProjectsRaw(prev=>{
           const next=typeof fn==="function"?fn(prev):fn;
@@ -662,17 +1006,15 @@
 
       function addProject(){
         const id="p"+Date.now();
-        const newP={id,name:`프로젝트 ${projects.length+1}`,budget:"500000",items:[]};
+        const newP={id,name:`프로젝트 ${projects.length+1}`,budget:"500000",items:[],members:[],settleItems:[],settledPairs:[]};
         setProjects(ps=>[...ps,newP]);
         if(fbReady) saveProjectToFirebase(newP);
         setActiveId(id);
       }
-
       function updateProject(updated){
         setProjects(ps=>ps.map(p=>p.id===updated.id?updated:p));
         if(fbReady) saveProjectToFirebase(updated);
       }
-
       function deleteProject(id){
         const next=projects.filter(p=>p.id!==id);
         setProjects(next);
@@ -680,30 +1022,14 @@
         if(activeId===id) setActiveId(next[0]?.id||null);
         setConfirmDelete(null);
       }
-
-      function updateSharedProject(updated){
-        saveProjectToFirebase(updated);
-        setSharedProject(updated);
-      }
+      function updateSharedProject(updated){saveProjectToFirebase(updated);setSharedProject(updated);}
 
       const active=projects.find(p=>p.id===activeId);
-      const isMobile=window.innerWidth<640;
 
-      // ── 공유 모드 렌더링 ────────────────────────────────────────
+      // 공유 모드
       if(sharedProjectId){
-        if(sharedLoading) return(
-          <div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",background:C.bg,flexDirection:"column",gap:12}}>
-            <div style={{fontSize:24}}>⏳</div>
-            <div style={{fontSize:14,color:C.textSub}}>프로젝트 불러오는 중...</div>
-          </div>
-        );
-        if(sharedNotFound) return(
-          <div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",background:C.bg,flexDirection:"column",gap:12}}>
-            <div style={{fontSize:24}}>😕</div>
-            <div style={{fontSize:16,fontWeight:700,color:C.text}}>프로젝트를 찾을 수 없어요</div>
-            <div style={{fontSize:13,color:C.textSub}}>링크가 잘못됐거나 삭제된 프로젝트예요.</div>
-          </div>
-        );
+        if(sharedLoading) return(<div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",background:C.bg,flexDirection:"column",gap:12,fontFamily:"Pretendard, sans-serif"}}><div style={{fontSize:24}}>⏳</div><div style={{fontSize:14,color:C.textSub}}>불러오는 중...</div></div>);
+        if(sharedNotFound) return(<div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",background:C.bg,flexDirection:"column",gap:12,fontFamily:"Pretendard, sans-serif"}}><div style={{fontSize:24}}>😕</div><div style={{fontSize:16,fontWeight:700,color:C.text}}>프로젝트를 찾을 수 없어요</div></div>);
         if(!sharedProject) return null;
         return(
           <div style={{display:"flex",height:"100vh",flexDirection:"column",background:C.bgApp,fontFamily:"Pretendard, sans-serif",color:C.text}}>
@@ -719,112 +1045,74 @@
         );
       }
 
-      // ── 비밀번호 화면 ───────────────────────────────────────────
+      // 비밀번호 화면
       if(!pwUnlocked) return(
         <div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",background:C.bg,fontFamily:"Pretendard, sans-serif"}}>
           <div style={{background:C.card,borderRadius:20,padding:"36px 32px",width:"90%",maxWidth:360,boxShadow:"0 8px 40px rgba(44,26,16,0.12)",textAlign:"center"}}>
             <div style={{fontSize:36,marginBottom:12}}>🔐</div>
             <div style={{fontSize:18,fontWeight:800,color:C.text,marginBottom:6}}>여행 비용 관리</div>
             <div style={{fontSize:13,color:C.textSub,marginBottom:24}}>비밀번호를 입력해주세요</div>
-            <input type="password" value={pwInput} placeholder="비밀번호"
-              onChange={e=>setPwInput(e.target.value)}
-              onKeyDown={e=>e.key==="Enter"&&tryUnlock()}
-              style={{...inputStyle,textAlign:"center",fontSize:18,letterSpacing:4,marginBottom:12,
-                border:`1px solid ${pwError?C.max:C.border}`,transition:"border 0.2s"}}/>
+            <input type="password" value={pwInput} placeholder="비밀번호" onChange={e=>setPwInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&tryUnlock()}
+              style={{...inputStyle,textAlign:"center",fontSize:18,letterSpacing:4,marginBottom:12,border:`1px solid ${pwError?C.max:C.border}`}}/>
             {pwError&&<div style={{fontSize:12,color:C.max,marginBottom:8}}>비밀번호가 틀렸어요</div>}
             <button onClick={tryUnlock} style={{width:"100%",background:C.orange,color:"#FFF",border:"none",borderRadius:10,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(224,90,41,0.3)"}}>확인</button>
           </div>
         </div>
       );
 
-      // ── 일반 모드 렌더링 ────────────────────────────────────────
+      // 일반 모드
       return(
         <div style={{display:"flex",height:"100vh",background:C.bgApp,fontFamily:"Pretendard, sans-serif",color:C.text,overflow:"hidden"}}>
-          {sidebarOpen&&isMobile&&(
-            <div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:10}}/>
-          )}
+          {sidebarOpen&&isMobile&&<div onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:10}}/>}
 
-          {/* 사이드바 */}
-          <div style={{
-            width:sidebarOpen?220:0, minWidth:sidebarOpen?220:0,
-            background:C.sidebar, borderRight:sidebarOpen?`1px solid ${C.border}`:"none",
-            display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden",
-            transition:"width 0.22s ease, min-width 0.22s ease",
-            position:isMobile?"fixed":"relative",
-            zIndex:isMobile?20:"auto", height:"100%", top:0, left:0,
-          }}>
+          <div style={{width:sidebarOpen?220:0,minWidth:sidebarOpen?220:0,background:C.sidebar,borderRight:sidebarOpen?`1px solid ${C.border}`:"none",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden",transition:"width 0.22s ease, min-width 0.22s ease",position:isMobile?"fixed":"relative",zIndex:isMobile?20:"auto",height:"100%",top:0,left:0}}>
             <div style={{padding:"20px 18px 14px",whiteSpace:"nowrap"}}>
               <div style={{fontSize:10,color:C.textSub,letterSpacing:3,marginBottom:3,fontWeight:600}}>TRAVEL COST</div>
               <div style={{fontSize:17,fontWeight:800,color:C.text}}>여행 비용 관리</div>
             </div>
-            <div style={{flex:1,overflowY:"auto",padding:"4px 10px",whiteSpace:"nowrap"}}>
+            <div style={{flex:1,overflowY:"auto",padding:"4px 10px"}}>
               {projects.map(p=>{
                 const isActive=p.id===activeId;
-                const minS=(()=>{const sc=generateScenarios(p.items);return sc.reduce((a,b)=>a.total<b.total?a:b,sc[0]);})();
+                const sc=generateScenarios(p.items);
+                const minS=sc.reduce((a,b)=>a.total<b.total?a:b,sc[0]);
                 return(
                   <div key={p.id} onClick={()=>{setActiveId(p.id);if(isMobile)setSidebarOpen(false);}}
                     style={{borderRadius:10,padding:"10px 12px",marginBottom:4,cursor:"pointer",background:isActive?C.orange:"transparent",color:isActive?"#FFF":C.text,position:"relative"}}>
                     <div style={{fontSize:13,fontWeight:isActive?700:500,marginBottom:2,paddingRight:40}}>{p.name}</div>
                     <div style={{fontSize:11,color:isActive?"rgba(255,255,255,0.75)":C.textSub}}>{fmt(minS?.total||0)} ~</div>
                     <div style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",display:"flex",gap:3}} onClick={e=>e.stopPropagation()}>
-                      <button onClick={()=>setRenaming(p.id)}
-                        style={{background:isActive?"rgba(255,255,255,0.2)":"rgba(0,0,0,0.06)",border:"none",borderRadius:5,padding:"3px 6px",fontSize:11,color:isActive?"#FFF":C.textSub,cursor:"pointer"}}>✎</button>
-                      {projects.length>1&&(
-                        <button onClick={()=>setConfirmDelete(p.id)}
-                          style={{background:isActive?"rgba(255,255,255,0.2)":"rgba(0,0,0,0.06)",border:"none",borderRadius:5,padding:"3px 6px",fontSize:11,color:isActive?"#FFF":C.textSub,cursor:"pointer"}}>✕</button>
-                      )}
+                      <button onClick={()=>setRenaming(p.id)} style={{background:isActive?"rgba(255,255,255,0.2)":"rgba(0,0,0,0.06)",border:"none",borderRadius:5,padding:"3px 6px",fontSize:11,color:isActive?"#FFF":C.textSub,cursor:"pointer"}}>✎</button>
+                      {projects.length>1&&<button onClick={()=>setConfirmDelete(p.id)} style={{background:isActive?"rgba(255,255,255,0.2)":"rgba(0,0,0,0.06)",border:"none",borderRadius:5,padding:"3px 6px",fontSize:11,color:isActive?"#FFF":C.textSub,cursor:"pointer"}}>✕</button>}
                     </div>
                   </div>
                 );
               })}
             </div>
-            <div style={{padding:"10px 10px 16px",whiteSpace:"nowrap"}}>
-              <button onClick={addProject}
-                style={{width:"100%",background:"none",border:`1.5px dashed ${C.border}`,borderRadius:10,padding:"10px",fontSize:13,fontWeight:600,color:C.textSub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                + 프로젝트 추가
-              </button>
+            <div style={{padding:"10px 10px 16px"}}>
+              <button onClick={addProject} style={{width:"100%",background:"none",border:`1.5px dashed ${C.border}`,borderRadius:10,padding:"10px",fontSize:13,fontWeight:600,color:C.textSub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>+ 프로젝트 추가</button>
             </div>
           </div>
 
-          {/* 메인 */}
           <div style={{flex:1,display:"flex",flexDirection:"column",minWidth:0}}>
             <div style={{padding:"12px 16px",background:C.bgHeader,borderBottom:`1px solid ${C.border}`,flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
-              <button onClick={()=>setSidebarOpen(v=>!v)} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 6px",borderRadius:7,color:C.textSub,fontSize:18,lineHeight:1,flexShrink:0}}>
-                {sidebarOpen?"◀":"▶"}
-              </button>
+              <button onClick={()=>setSidebarOpen(v=>!v)} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 6px",borderRadius:7,color:C.textSub,fontSize:18,lineHeight:1,flexShrink:0}}>{sidebarOpen?"◀":"▶"}</button>
               <div>
                 <div style={{fontSize:10,color:C.textSub,letterSpacing:2,fontWeight:600,marginBottom:1}}>PROJECT</div>
                 <div style={{fontSize:18,fontWeight:800,color:C.text}}>{active?.name}</div>
               </div>
             </div>
-            {active?(
-              <ProjectView key={active.id} project={active} onUpdate={updateProject} isShared={false}/>
-            ):(
-              <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:C.textSub,fontSize:14}}>
-                프로젝트를 선택하거나 추가해주세요
-              </div>
+            {active?<ProjectView key={active.id} project={active} onUpdate={updateProject} isShared={false}/>:(
+              <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:C.textSub,fontSize:14}}>프로젝트를 선택하거나 추가해주세요</div>
             )}
           </div>
 
-          {renaming&&(
-            <RenameModal current={projects.find(p=>p.id===renaming)?.name||""} onClose={()=>setRenaming(null)}
-              onSave={name=>{
-                const updated=projects.find(p=>p.id===renaming);
-                if(updated){
-                  const newP={...updated,name};
-                  setProjects(ps=>ps.map(p=>p.id===renaming?newP:p));
-                  if(fbReady) saveProjectToFirebase(newP);
-                }
-                setRenaming(null);
-              }}/>
-          )}
+          {renaming&&<RenameModal current={projects.find(p=>p.id===renaming)?.name||""} onClose={()=>setRenaming(null)} onSave={name=>{const updated=projects.find(p=>p.id===renaming);if(updated){const newP={...updated,name};setProjects(ps=>ps.map(p=>p.id===renaming?newP:p));if(fbReady)saveProjectToFirebase(newP);}setRenaming(null);}}/>}
+
           {confirmDelete&&(
             <div onClick={()=>setConfirmDelete(null)} style={{position:"fixed",inset:0,background:"rgba(44,26,16,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}>
               <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:14,padding:"24px",width:300,boxShadow:"0 8px 32px rgba(44,26,16,0.15)",textAlign:"center"}}>
                 <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:8}}>프로젝트 삭제</div>
-                <div style={{fontSize:13,color:C.textSub,marginBottom:20}}>
-                  <b style={{color:C.text}}>{projects.find(p=>p.id===confirmDelete)?.name}</b>을 삭제할까요?<br/>이 작업은 되돌릴 수 없습니다.
-                </div>
+                <div style={{fontSize:13,color:C.textSub,marginBottom:20}}><b style={{color:C.text}}>{projects.find(p=>p.id===confirmDelete)?.name}</b>을 삭제할까요?</div>
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setConfirmDelete(null)} style={{flex:1,background:"none",color:C.textSub,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px",fontSize:13,cursor:"pointer"}}>취소</button>
                   <button onClick={()=>deleteProject(confirmDelete)} style={{flex:1,background:C.max,color:"#FFF",border:"none",borderRadius:8,padding:"10px",fontSize:13,fontWeight:700,cursor:"pointer"}}>삭제</button>
