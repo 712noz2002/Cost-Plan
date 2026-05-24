@@ -656,25 +656,14 @@
     // ── 정산 탭 ─────────────────────────────────────────────────
     function SettleTab({project,onUpdate}){
       const {members=[],settleItems=[],settledPairs=[],items=[]}=project;
-      const [newMember,setNewMember]=useState("");
-      const [showAddMember,setShowAddMember]=useState(false);
       const [editSettleId,setEditSettleId]=useState(null);
-
-      function addMember(){
-        if(!newMember.trim()) return;
-        const updated={...project,members:[...members,newMember.trim()]};
-        onUpdate(updated);
-        setNewMember("");setShowAddMember(false);
-      }
-
-      function removeMember(m){
-        onUpdate({...project,members:members.filter(x=>x!==m)});
-      }
 
       function updateSettleItem(id,changes){
         const next=settleItems.map(i=>i.id===id?{...i,...changes}:i);
         onUpdate({...project,settleItems:next});
       }
+
+      const [showPlanPicker,setShowPlanPicker]=useState(false);
 
       function addSettleItem(){
         const newItem={
@@ -682,6 +671,20 @@
           settlePayer:"", settleParticipants:[], isPersonal:false,
         };
         onUpdate({...project,settleItems:[...settleItems,newItem]});
+        setEditSettleId(newItem.id);
+      }
+
+      function importFromPlan(planItem){
+        const already=settleItems.some(s=>s.planItemId===planItem.id);
+        if(already) return;
+        const newItem={
+          id:uid(), planItemId:planItem.id,
+          name:planItem.name, amount:planItem.amount, actualAmount:"",
+          settlePayer:"", settleParticipants:[],
+          isPersonal:planItem.isPersonal||false,
+        };
+        onUpdate({...project,settleItems:[...settleItems,newItem]});
+        setShowPlanPicker(false);
         setEditSettleId(newItem.id);
       }
 
@@ -703,33 +706,49 @@
       return(
         <div style={{flex:1,overflowY:"auto",padding:"18px 16px",background:C.bg}}>
 
-          {/* 인원 설정 */}
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",marginBottom:16}}>
-            <div style={{fontSize:11,color:C.textSub,fontWeight:600,marginBottom:10}}>참여 인원</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:7,alignItems:"center"}}>
-              {members.map(m=>(
-                <div key={m} style={{display:"flex",alignItems:"center",gap:4,background:C.orangeLight,borderRadius:99,padding:"4px 10px 4px 12px"}}>
-                  <span style={{fontSize:12,fontWeight:600,color:C.orange}}>{m}</span>
-                  <button onClick={()=>removeMember(m)} style={{background:"none",border:"none",color:C.orangeDim,cursor:"pointer",fontSize:14,lineHeight:1,padding:"0 0 0 2px"}}>×</button>
-                </div>
-              ))}
-              {showAddMember?(
-                <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  <input autoFocus value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder="이름 입력" style={{...inputStyle,width:100,padding:"4px 10px",fontSize:12}}/>
-                  <button onClick={addMember} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"4px 10px",fontSize:12,fontWeight:700,cursor:"pointer"}}>추가</button>
-                  <button onClick={()=>setShowAddMember(false)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 10px",fontSize:12,color:C.textSub,cursor:"pointer"}}>취소</button>
-                </div>
-              ):(
-                <button onClick={()=>setShowAddMember(true)} style={{background:"none",border:`1.5px dashed ${C.border}`,borderRadius:99,padding:"4px 12px",fontSize:12,color:C.textSub,cursor:"pointer"}}>+ 추가</button>
-              )}
-            </div>
-          </div>
-
           {/* 실제 지출 항목 */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <div style={{fontSize:10,color:C.textSub,fontWeight:700,letterSpacing:2}}>실제 지출 항목</div>
-            <button onClick={addSettleItem} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ 추가</button>
+            <div style={{display:"flex",gap:6}}>
+              {items.length>0&&(
+                <button onClick={()=>setShowPlanPicker(true)} style={{background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:8,padding:"6px 12px",fontSize:12,fontWeight:600,color:C.textSub,cursor:"pointer"}}>계획에서 가져오기</button>
+              )}
+              <button onClick={addSettleItem} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ 직접 추가</button>
+            </div>
           </div>
+
+          {/* 계획 항목 선택 모달 */}
+          {showPlanPicker&&(
+            <div onClick={()=>setShowPlanPicker(false)} style={{position:"fixed",inset:0,background:"rgba(44,26,16,0.45)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300}}>
+              <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:"16px 16px 0 0",padding:"20px 16px 32px",width:"100%",maxWidth:500,maxHeight:"70vh",overflowY:"auto",boxShadow:"0 -8px 32px rgba(44,26,16,0.15)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                  <div style={{fontSize:15,fontWeight:700,color:C.text}}>계획 항목 선택</div>
+                  <button onClick={()=>setShowPlanPicker(false)} style={{background:"none",border:"none",color:C.textSub,fontSize:22,cursor:"pointer"}}>×</button>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {[...items].sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(planItem=>{
+                    const cc=CATEGORY_COLORS[planItem.category]||CATEGORY_COLORS["기타"];
+                    const already=settleItems.some(s=>s.planItemId===planItem.id);
+                    return(
+                      <div key={planItem.id} onClick={()=>!already&&importFromPlan(planItem)}
+                        style={{background:already?"#F8F6F5":C.card,border:`1px solid ${already?C.border:C.border}`,borderRadius:11,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,cursor:already?"default":"pointer",opacity:already?0.5:1}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
+                            <span style={{fontSize:13,fontWeight:500,color:C.text}}>{planItem.name}</span>
+                            <span style={{fontSize:10,padding:"2px 6px",borderRadius:99,background:cc.bg,color:cc.text,fontWeight:600}}>{planItem.category}</span>
+                            {planItem.isPersonal&&<span style={{fontSize:10,padding:"2px 6px",borderRadius:99,background:"#EEEEF8",color:"#4A5AB0",fontWeight:600}}>개인</span>}
+                            {already&&<span style={{fontSize:10,padding:"2px 6px",borderRadius:99,background:"#F0EDED",color:"#9A7A70",fontWeight:600}}>추가됨</span>}
+                          </div>
+                          {planItem.date&&<div style={{fontSize:11,color:C.textMuted}}>{planItem.date}{planItem.destination?` · ${planItem.destination}`:""}</div>}
+                        </div>
+                        <div style={{fontSize:14,fontWeight:700,color:C.text,whiteSpace:"nowrap"}}>{fmt(parseFloat(planItem.amount)||0)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
             {settleItems.map(item=>{
@@ -869,7 +888,20 @@
       const [tab,setTab]=useState("plan");
       const [showDownloadMenu,setShowDownloadMenu]=useState(false);
       const [showShareModal,setShowShareModal]=useState(false);
+      const [showMemberBar,setShowMemberBar]=useState(false);
+      const [newMember,setNewMember]=useState("");
+      const [showAddMember,setShowAddMember]=useState(false);
       const dlRef=useRef(null);
+      const members=project.members||[];
+
+      function addMember(){
+        if(!newMember.trim()) return;
+        onUpdate({...project,members:[...members,newMember.trim()]});
+        setNewMember("");setShowAddMember(false);
+      }
+      function removeMember(m){
+        onUpdate({...project,members:members.filter(x=>x!==m)});
+      }
 
       useEffect(()=>{
         const h=e=>{if(dlRef.current&&!dlRef.current.contains(e.target))setShowDownloadMenu(false);};
@@ -928,6 +960,35 @@
           </div>
 
           <div id="capture-area" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
+            {/* 인원 관리 바 */}
+            <div style={{background:C.cardAlt,borderBottom:`1px solid ${C.border}`,padding:"8px 14px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <button onClick={()=>setShowMemberBar(v=>!v)}
+                style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:600,color:C.textSub,cursor:"pointer",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                👥 인원 {members.length>0?`(${members.length}명)`:""} {showMemberBar?"▴":"▾"}
+              </button>
+              {!showMemberBar&&members.map(m=>(
+                <span key={m} style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:C.orangeLight,color:C.orange,fontWeight:600}}>{m}</span>
+              ))}
+              {showMemberBar&&(
+                <div style={{width:"100%",display:"flex",flexWrap:"wrap",gap:7,alignItems:"center",paddingTop:6}}>
+                  {members.map(m=>(
+                    <div key={m} style={{display:"flex",alignItems:"center",gap:4,background:C.orangeLight,borderRadius:99,padding:"4px 10px 4px 12px"}}>
+                      <span style={{fontSize:12,fontWeight:600,color:C.orange}}>{m}</span>
+                      <button onClick={()=>removeMember(m)} style={{background:"none",border:"none",color:C.orangeDim,cursor:"pointer",fontSize:14,lineHeight:1,padding:"0 0 0 2px"}}>×</button>
+                    </div>
+                  ))}
+                  {showAddMember?(
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <input autoFocus value={newMember} onChange={e=>setNewMember(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addMember()} placeholder="이름 입력" style={{...inputStyle,width:90,padding:"4px 10px",fontSize:12}}/>
+                      <button onClick={addMember} style={{background:C.orange,color:"#FFF",border:"none",borderRadius:8,padding:"4px 10px",fontSize:12,fontWeight:700,cursor:"pointer"}}>추가</button>
+                      <button onClick={()=>{setShowAddMember(false);setNewMember("");}} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 10px",fontSize:12,color:C.textSub,cursor:"pointer"}}>취소</button>
+                    </div>
+                  ):(
+                    <button onClick={()=>setShowAddMember(true)} style={{background:"none",border:`1.5px dashed ${C.border}`,borderRadius:99,padding:"4px 12px",fontSize:12,color:C.textSub,cursor:"pointer"}}>+ 추가</button>
+                  )}
+                </div>
+              )}
+            </div>
             {tab==="plan"&&<PlanTab project={project} onUpdate={onUpdate}/>}
             {tab==="scenario"&&<ScenarioTab project={project}/>}
             {tab==="settle"&&<SettleTab project={project} onUpdate={onUpdate}/>}
