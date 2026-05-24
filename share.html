@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>여행 비용 관리 - 공유</title>
+  <title>여행 비용 관리</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMDAgMjQwIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIj4KICA8ZGVmcz4KICAgIDxtYXNrIGlkPSJub3RjaC1tYXNrIj4KICAgICAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyNDAiIGZpbGw9IiNmZmZmZmYiIC8+CiAgICAgIDxwYXRoIGQ9Ik0gMTMyLDc1IEMgMTMyLDg1IDE0MCw5MyAxNTAsOTMgQyAxNjAsOTMgMTY4LDg1IDE2OCw3NSBaIiBmaWxsPSIjMDAwMDAwIiAvPgogICAgPC9tYXNrPgogIDwvZGVmcz4KCiAgPHJlY3QgeD0iOTEiIHk9IjM4IiB3aWR0aD0iMTE4IiBoZWlnaHQ9IjgwIiByeD0iMTIiIGZpbGw9IiNCMjQ3MUUiIC8+CgogIDxyZWN0IHg9Ijc1IiB5PSI3NSIgd2lkdGg9IjE1MCIgaGVpZ2h0PSIxMjAiIHJ4PSIyNCIgZmlsbD0iI0UwNUEyOSIgbWFzaz0idXJsKCNub3RjaC1tYXNrKSIgLz4KCiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgICA8cGF0aCBkPSJNIDEyNiwxMTggTCAxMzYsMTU1IEwgMTUwLDEyNSBMIDE2NCwxNTUgTCAxNzQsMTE4IiAvPgogICAgPGxpbmUgeDE9IjEyMCIgeTE9IjEzNiIgeDI9IjE4MCIgeTI9IjEzNiIgLz4KICA8L2c+Cjwvc3ZnPgo=">
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -1003,29 +1003,6 @@
     }
 
     // ── 공유용 앱 ─────────────────────────────────────────────────
-    function saveProjectToFirebase(project) {
-      if(!window.__db) return;
-      const data = {
-        id:project.id, name:project.name, budget:project.budget,
-        members:project.members||[],
-        settleItems:project.settleItems||[],
-        settledPairs:project.settledPairs||[],
-        items:project.items.reduce((acc,item)=>{acc[item.id]=item;return acc;},{}),
-      };
-      window.__dbSet(window.__dbRef(window.__db,`projects/${project.id}`),data).catch(console.error);
-    }
-
-    function useFirebase() {
-      const [ready,setReady]=useState(!!window.__firebaseReady);
-      useEffect(()=>{
-        if(window.__firebaseReady){setReady(true);return;}
-        const h=()=>setReady(true);
-        window.addEventListener("firebaseReady",h);
-        return()=>window.removeEventListener("firebaseReady",h);
-      },[]);
-      return ready;
-    }
-
     function App(){
       const fbReady=useFirebase();
       const projectId=new URLSearchParams(window.location.search).get("id");
