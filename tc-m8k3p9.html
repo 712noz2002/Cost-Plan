@@ -1046,26 +1046,39 @@
 
       useEffect(()=>{
         if(sharedProjectId||!fbReady||!pwUnlocked) return;
-        // 전체 프로젝트 목록 구독
-        const unsub=window.__dbOnValue(window.__dbRef(window.__db,"projects"),snap=>{
+        // 먼저 전체 목록 한 번 읽어서 프로젝트 ID 파악
+        window.__dbOnValue(window.__dbRef(window.__db,"projects"),snap=>{
           const data=snap.val();
           if(!data){
             const local=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
             if(local.length>0) local.forEach(p=>saveProjectToFirebase(p));
-            return;
           }
-          const fbProjects=Object.values(data).map(p=>({
-            ...p,
-            items:p.items?Object.values(p.items):[],
-            members:p.members||[],
-            settleItems:p.settleItems?Object.values(p.settleItems).filter(i=>i&&i.id):p.settleItems||[],
-            settledPairs:p.settledPairs||[],
-          }));
-          try{localStorage.setItem(STORAGE_KEY,JSON.stringify(fbProjects));}catch{}
-          setProjectsRaw(fbProjects);
-        });
-        return unsub;
+        },{onlyOnce:true});
       },[fbReady,sharedProjectId,pwUnlocked]);
+
+      // 각 프로젝트 개별 실시간 구독
+      useEffect(()=>{
+        if(sharedProjectId||!fbReady||!pwUnlocked||!projects.length) return;
+        const unsubs=projects.map(p=>{
+          return window.__dbOnValue(window.__dbRef(window.__db,`projects/${p.id}`),snap=>{
+            const data=snap.val();
+            if(!data) return;
+            const updated={
+              ...data,
+              items:data.items?Object.values(data.items):[],
+              members:data.members||[],
+              settleItems:data.settleItems?Object.values(data.settleItems).filter(i=>i&&i.id):[],
+              settledPairs:data.settledPairs||[],
+            };
+            setProjectsRaw(prev=>{
+              const next=prev.map(proj=>proj.id===p.id?updated:proj);
+              try{localStorage.setItem(STORAGE_KEY,JSON.stringify(next));}catch{}
+              return next;
+            });
+          });
+        });
+        return ()=>unsubs.forEach(u=>u());
+      },[fbReady,sharedProjectId,pwUnlocked,projects.map(p=>p.id).join(",")]);
 
       function tryUnlock(){
         if(pwInput===PW){setPwUnlocked(true);try{sessionStorage.setItem("tc-unlocked","1");}catch{}}
