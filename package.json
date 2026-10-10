@@ -1,0 +1,19 @@
+{
+  "name": "ansim-on-branch-test",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "gen:spec": "python3 -I scripts/gen-spec.py",
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --serve",
+    "test": "tsx --test tests/*.test.ts",
+    "e2e": "node tests/e2e/e2e.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": { "react": "^18.3.1", "react-dom": "^18.3.1" },
+  "devDependencies": {
+    "@types/node": "^22.0.0", "@types/react": "^18.3.12", "@types/react-dom": "^18.3.1",
+    "esbuild": "^0.24.0", "playwright": "^1.48.0", "tsx": "^4.19.0", "typescript": "^5.6.3"
+  }
+}

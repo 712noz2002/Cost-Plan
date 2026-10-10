@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#142d6e" />
+    <title>안심ON 미래 보호자 유형 테스트</title>
+    <script>
+      // /results/<토큰> 경로로 열렸을 때 ./app.js 같은 상대 경로가 올바르게 풀리도록 <base>를 맞춘다.
+      (function () {
+        var m = /^(.*\/)results\/[A-Za-z0-9_-]+\/?$/.exec(location.pathname);
+        if (m) document.write('<base href="' + m[1] + '">');
+      })();
+    </script>
+    <link rel="stylesheet" href="./app.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="./config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
